@@ -39,6 +39,8 @@ section.step > .h h2 { font-size: 1.45rem }
 .state { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r); background: var(--card); font-size: .93rem }
 .state .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex: none; background: var(--band); box-shadow: 0 0 0 4px color-mix(in srgb, var(--band) 35%, transparent) }
 .state.ok .dot { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 20%, transparent) }
+.umsg { margin-top: 8px; padding: 10px 14px; border-left: 3px solid var(--band); background: var(--card); border-radius: 0 var(--r) var(--r) 0 }
+.umsg p { margin: 4px 0 0; font-family: var(--serif, Georgia, serif); font-size: 1.02rem; line-height: 1.4 }
 .state.bad .dot { background: var(--bad); box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 20%, transparent) }
 .mine { display: grid; border-top: 1px solid var(--hair); margin-top: 8px }
 .mine > a { display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--hair); text-decoration: none }
@@ -228,7 +230,8 @@ function stateBox(b) {
   const [txt, cls] = STAT[b.status] || ["", ""];
   const exp = b.status === "talep" ? "Usta talebini gördüğünde onaylayacak. Bu sayfadan durumunu takip edebilirsin." : b.status === "onayli" ? "Randevun kesinleşti. Zamanında gel, ödemeyi dükkânda yaparsın." :
     b.status === "red" ? "Usta bu saati onaylayamadı. Başka bir saat seçebilirsin." : b.status === "iptal" ? (b.closedBy && b.closedBy.startsWith("dukkan") ? "Dükkân randevuyu iptal etti." : "Randevuyu iptal ettin.") : "";
-  return `<div class="state ${cls}"><span class="dot"></span><span><b>${txt}.</b> ${exp}</span></div>`;
+  const msg = b.shopMsg ? `<div class="umsg"><span class="soft small">${esc(b.barberName || "Usta")} not bıraktı</span><p>“${esc(b.shopMsg)}”</p></div>` : "";
+  return `<div class="state ${cls}"><span class="dot"></span><span><b>${txt}.</b> ${exp}</span></div>${msg}`;
 }
 function ticket(b) {
   const live = b.status === "talep" || b.status === "onayli";
@@ -252,7 +255,7 @@ async function renderMine() {
   for (const x of list) api("booking", null, "&id=" + encodeURIComponent(x.id) + "&k=" + encodeURIComponent(x.k)).then(r => {
     const b = r.booking, e = $("m-" + x.id); if (!e) return; syncMine(b);
     const live = b.status === "talep" || b.status === "onayli";
-    e.innerHTML = `${esc(b.serviceName)} · ${esc(b.barberName)} <span class="tag ${b.status === "talep" ? "bekliyor" : b.status === "onayli" ? "geldi" : "iptal"}">${STAT[b.status][0]}</span>${live ? `<br><span class="count" data-until="${b.date} ${b.time}">${until(b.date, b.time)}</span>` : ""}`;
+    e.innerHTML = `${esc(b.serviceName)} · ${esc(b.barberName)} <span class="tag ${b.status === "talep" ? "bekliyor" : b.status === "onayli" ? "geldi" : "iptal"}">${STAT[b.status][0]}</span>${live ? `<br><span class="count" data-until="${b.date} ${b.time}">${until(b.date, b.time)}</span>` : ""}${b.shopMsg ? `<br><span class="soft small">Usta: “${esc(b.shopMsg)}”</span>` : ""}`;
     $("t-" + x.id).innerHTML = `${esc(b.time)}<small>${esc(dayName(b.date))} ${dn(b.date)} ${dm(b.date)}</small>`;
   }).catch(() => { const e = $("m-" + x.id); if (e) e.textContent = "Bulunamadı"; });
 }

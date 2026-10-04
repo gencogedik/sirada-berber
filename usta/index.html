@@ -40,6 +40,8 @@ nav.tabs .badge { position: absolute; top: 2px; left: 50%; margin-left: 6px; min
 .req { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--hair); align-items: center }
 .req .tm { font-family: var(--mono); font-weight: 600; line-height: 1.15 }
 .req .tm small { display: block; font-family: var(--sans); font-weight: 500; font-size: .75rem; color: var(--soft) }
+.req .rmsg { margin-top: 8px }
+.req .rmsg input { padding: 8px 10px; font-size: .9rem }
 .req .q { display: flex; gap: 6px; flex-wrap: wrap; justify-content: end }
 @media (max-width: 560px) { .req { grid-template-columns: 74px minmax(0, 1fr) } .req .q { grid-column: 2; justify-content: start } }
 .list { display: grid }
@@ -161,6 +163,7 @@ function renderAuth(err, forgot) {
 /* ---------- shell ---------- */
 const owner = () => me && me.role === "sahip";
 function pages() { return owner() ? [["ajanda", "Ajanda"], ["musteri", "Müşteriler"], ["ustalar", "Ustalar"], ["ayar", "Ayarlar"]] : [["ajanda", "Ajanda"], ["musteri", "Müşteriler"], ["saatler", "Saatlerim"]]; }
+const reqMsg = {}; // per-request note to the customer, kept across re-renders
 function typing() { const a = document.activeElement; return a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox"; }
 function render(force) {
   if (!me) return renderAuth();
@@ -236,7 +239,8 @@ function vAgenda() {
   ${A.pending.length ? `<div class="inbox"><div class="h"><b>Onay bekleyen ${A.pending.length} talep</b><span class="soft small">Onaylayınca kesinleşir</span></div>
     ${A.pending.slice(0, 20).map(p => `<div class="req"><span class="tm">${p.time}<small>${esc(dshort(p.date))} ${dnum(p.date)} ${dmon(p.date)}</small></span>
       <div style="min-width:0"><b>${esc(p.name)}</b> <span class="soft small">· ${esc(p.serviceName)}${owner() && barbers().length > 1 ? " · " + esc(bname(p.barberId)) : ""} · ${ago(p.createdAt)}</span>${p.note ? `<div class="cn"><span class="band">${esc(p.note)}</span></div>` : ""}
-        ${rejectAsk === p.id ? `<div class="line" style="margin-top:8px"><label class="fld" for="rr-${p.id}"><span>Neden? <span class="soft">(isteğe bağlı)</span></span><input id="rr-${p.id}" maxlength="120" placeholder="Örn. o saatte doluyum"></label><button class="btn light sm" data-act="rejNo">Vazgeç</button><button class="btn danger sm" data-act="rejYes" data-id="${p.id}">Reddet</button></div>` : ""}</div>
+        <label class="fld rmsg" for="rm-${p.id}"><span>Müşteriye not <span class="soft">(isteğe bağlı · onay ya da redle birlikte gider)</span></span><input id="rm-${p.id}" data-rm="${p.id}" maxlength="160" value="${esc(reqMsg[p.id] || "")}" placeholder="${rejectAsk === p.id ? "Örn. o saatte doluyum, 16:00 uygun" : "Örn. 5 dk erken gel"}"></label>
+        ${rejectAsk === p.id ? `<div class="line" style="margin-top:8px"><span class="soft small">Talep reddedilsin mi?</span><button class="btn light sm" data-act="rejNo">Vazgeç</button><button class="btn danger sm" data-act="rejYes" data-id="${p.id}">Evet, reddet</button></div>` : ""}</div>
       <div class="q">${rejectAsk === p.id ? "" : `<button class="btn sm" data-act="approve" data-id="${p.id}">Onayla</button><button class="btn light sm" data-act="rejAsk" data-id="${p.id}">Reddet</button>`}</div></div>`).join("")}</div>` : ""}
   <div class="days">${strip.map(d => `<button class="day" data-act="day" data-v="${d}" aria-pressed="${d === date}">${A.counts[d] ? `<span class="cnt">${A.counts[d]}</span>` : ""}<span class="dn">${dshort(d)}</span><span class="dd">${dnum(d)}</span><span class="dm">${dmon(d)}</span></button>`).join("")}
     <label class="day" style="cursor:pointer" title="Başka gün"><span class="dn">Diğer</span><span class="dd">…</span><input type="date" id="pick" value="${date}" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Gün seç"></label></div>
@@ -266,7 +270,8 @@ function rowB(b) {
       ${live ? `<div class="line"><label class="fld" for="mvD-${b.id}"><span>Yeni gün</span><input type="date" id="mvD-${b.id}" value="${b.date}" min="${nowTR().date}" data-mv="${b.id}"></label>
         <label class="fld" for="mvT-${b.id}"><span>Yeni saat</span><select id="mvT-${b.id}">${freeOpts(b.barberId, b.date, b.dur, b.id, b.time)}</select></label><button class="btn sm" data-act="move" data-id="${b.id}">Taşı</button></div>
       ${cancelAsk === b.id ? `<div class="line"><span style="font-weight:600;align-self:center">İptal edilsin mi?</span><button class="btn light sm" data-act="cancelNo">Vazgeç</button><button class="btn danger sm" data-act="cancelYes" data-id="${b.id}">Evet, iptal et</button></div>` : `<div><button class="btn danger sm" data-act="cancelAsk" data-id="${b.id}">Randevuyu iptal et</button></div>`}`
-      : `<span class="soft small">${b.status === "red" ? "Reddedildi" + (b.rejectReason ? ": " + esc(b.rejectReason) : "") : b.status === "iptal" ? "İptal eden: " + (b.closedBy === "musteri" ? "müşteri" : "dükkân") : ""}</span>`}
+      : `<span class="soft small">${b.status === "red" ? "Reddedildi" + (b.rejectReason ? " · müşteriye not: " + esc(b.rejectReason) : "") : b.status === "iptal" ? "İptal eden: " + (b.closedBy === "musteri" ? "müşteri" : "dükkân") : ""}</span>`}
+      ${b.shopMsg && b.status !== "red" ? `<span class="soft small">Müşteriye notun: “${esc(b.shopMsg)}”</span>` : ""}
       ${b.history && b.history.length ? `<span class="soft small">Taşındı: ${b.history.map(h => esc(h.from.slice(5) + " → " + h.to.slice(5))).join(", ")}</span>` : ""}
     </div>` : ""}</div>`;
 }
@@ -470,10 +475,10 @@ document.addEventListener("click", async (e) => {
     case "day": date = v; openId = null; render(true); await loadAgenda(true); break;
     case "filter": filter = v; render(true); break;
     case "open": openId = openId === v ? null : v; cancelAsk = null; render(true); break;
-    case "approve": await act("/api/staff?action=approve", { id }, "Onaylandı"); break;
-    case "rejAsk": rejectAsk = id; render(true); setTimeout(() => $("rr-" + id) && $("rr-" + id).focus(), 20); break;
+    case "approve": { const m = (($("rm-" + id) || {}).value || reqMsg[id] || "").trim(); delete reqMsg[id]; await act("/api/staff?action=approve", { id, msg: m }, m ? "Onaylandı, notun müşteriye gitti" : "Onaylandı"); break; }
+    case "rejAsk": { const i = $("rm-" + id); if (i) reqMsg[id] = i.value; rejectAsk = id; render(true); setTimeout(() => $("rm-" + id) && $("rm-" + id).focus(), 20); break; }
     case "rejNo": rejectAsk = null; render(true); break;
-    case "rejYes": { const r = ($("rr-" + id) || {}).value || ""; rejectAsk = null; await act("/api/staff?action=reject", { id, reason: r }, "Reddedildi, saat açıldı"); break; }
+    case "rejYes": { const r = (($("rm-" + id) || {}).value || reqMsg[id] || "").trim(); delete reqMsg[id]; rejectAsk = null; await act("/api/staff?action=reject", { id, reason: r }, "Reddedildi, saat açıldı"); break; }
     case "st": await act("/api/staff?action=status", { id, status: v }, ST[v] + " olarak işaretlendi"); break;
     case "restore": await act("/api/staff?action=restore", { id }, "Randevu geri alındı"); break;
     case "note": await act("/api/staff?action=note", { id, staffNote: $("sn-" + id).value }, "Not kaydedildi"); break;
@@ -515,6 +520,7 @@ document.addEventListener("change", (e) => {
 });
 document.addEventListener("input", (e) => {
   if (page === "ayar" && e.target.closest && e.target.closest("main") && draft) { readDraft(); updateSaveBar(); return; }
+  if (e.target.dataset && e.target.dataset.rm) { reqMsg[e.target.dataset.rm] = e.target.value; return; }
   if (e.target.id === "cq") { custQ = e.target.value; const p = e.target.selectionStart; render(true); const n = $("cq"); n.focus(); n.setSelectionRange(p, p); }
 });
 document.addEventListener("submit", async (e) => {

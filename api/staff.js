@@ -108,8 +108,8 @@ export default handle(async (req, res) => {
   if (!mine(bk.barberId)) return fail(res, 403, "Bu randevu başka bir ustanın.");
   const save = async () => { bk.updatedAt = Date.now(); await hsetJSON(BK, bk.id, bk); return send(res, 200, { booking: clean(bk) }); };
 
-  if (a === "approve") { if (bk.status !== "talep") return fail(res, 400, "Bu randevu onay beklemiyor."); bk.status = "onayli"; bk.approvedBy = u.username; bk.approvedAt = Date.now(); return save(); }
-  if (a === "reject") { if (bk.status !== "talep") return fail(res, 400, "Bu randevu onay beklemiyor."); bk.rejectReason = clip(b.reason, 120); await closeBooking(S, bk, "red", "dukkan:" + u.username); return send(res, 200, { booking: clean(bk) }); }
+  if (a === "approve") { if (bk.status !== "talep") return fail(res, 400, "Bu randevu onay beklemiyor."); bk.status = "onayli"; bk.approvedBy = u.username; bk.approvedAt = Date.now(); bk.shopMsg = clip(b.msg, 160); return save(); }
+  if (a === "reject") { if (bk.status !== "talep") return fail(res, 400, "Bu randevu onay beklemiyor."); bk.rejectReason = clip(b.reason, 160); bk.shopMsg = bk.rejectReason; await closeBooking(S, bk, "red", "dukkan:" + u.username); return send(res, 200, { booking: clean(bk) }); }
   if (a === "status") {
     if (!["geldi", "gelmedi", "onayli"].includes(b.status)) return fail(res, 400, "Geçersiz durum.");
     if (!["onayli", "geldi", "gelmedi"].includes(bk.status)) return fail(res, 400, "Önce randevuyu onayla ya da geri al.");

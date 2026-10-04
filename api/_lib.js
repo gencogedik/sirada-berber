@@ -235,7 +235,7 @@ export async function closeBooking(shop, bk, status, by) {
   return bk;
 }
 export const customerView = (bk, c) => ({ id: bk.id, date: bk.date, time: bk.time, dur: bk.dur, serviceName: bk.serviceName, price: bk.price, barberId: bk.barberId,
-  barberName: (c.barbers.find(b => b.id === bk.barberId) || {}).name || "Usta", name: bk.name, note: bk.note, status: bk.status, closedBy: bk.closedBy || null });
+  barberName: (c.barbers.find(b => b.id === bk.barberId) || {}).name || "Usta", name: bk.name, note: bk.note, status: bk.status, closedBy: bk.closedBy || null, shopMsg: bk.shopMsg || "" });
 
 /* ================= auth ================= */
 const SECRET = process.env.SESSION_SECRET || (DB_SECRET ? sha("sirada-session:" + DB_SECRET) : "dev-only-secret");
