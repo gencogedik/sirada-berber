@@ -61,6 +61,7 @@ async function call(action, data) {
 const MARK = '<svg width="24" height="24" viewBox="0 0 26 26"><g fill="none" stroke="#f6d24a" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="7" r="3.3"/><circle cx="6" cy="19" r="3.3"/><path d="M9 8.6 23 17M9 17.4 23 9"/></g></svg>';
 const day = (ts) => ts ? new Date(ts).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }) : "—";
 let admin = null, needsSetup = false, shops = null, made = null, reset = null, editSlug = null, detail = null, D = null, delAsk = false;
+let picked = new Set(), bulkAsk = false, rowAsk = null;
 
 function renderAuth(err) {
   $("root").innerHTML = needsSetup
@@ -77,7 +78,7 @@ function renderAuth(err) {
     try { const r = await call(needsSetup ? "setup" : "login", { username: $("u").value, password: $("p").value }); admin = r.admin; needsSetup = false;
       if (r.moved) toast("Eski dükkân verileri “" + r.moved + "” bağlantısına taşındı"); load(); } catch (x) { renderAuth(x.message); } };
 }
-async function load() { try { shops = (await call("shops")).shops; } catch (e) { toast(e.message); } render(); }
+async function load() { try { shops = (await call("shops")).shops; const ids = new Set(shops.map(x => x.id)); picked = new Set([...picked].filter(x => ids.has(x))); } catch (e) { toast(e.message); } render(); }
 function render() {
   if (!admin) return renderAuth();
   const list = shops || [], origin = location.origin;
@@ -96,13 +97,15 @@ function render() {
     <span class="mini"><button class="btn sm" data-act="copyReset">Kopyala</button></span></div>` : ""}
   ${detail ? detailHtml() : ""}
   <div class="kpis"><div><span class="lbl">Dükkân</span><b>${list.length}</b></div><div><span class="lbl">Kullanımda</span><b>${sold}</b></div><div><span class="lbl">Açık randevu</span><b>${list.reduce((s, x) => s + x.open, 0)}</b></div><div><span class="lbl">Toplam randevu</span><b>${list.reduce((s, x) => s + x.bookings, 0)}</b></div></div>
-  <div class="tbl"><table><thead><tr><th>Dükkân</th><th>Bağlantı</th><th>Sahip girişi</th><th class="n">Usta</th><th class="n">Randevu</th><th>Son randevu</th><th>Not</th><th></th></tr></thead><tbody>
-    ${list.map(s => `<tr class="${s.disabled ? "off" : ""}"><td><b>${esc(s.name)}</b>${s.disabled ? ' <span class="tag iptal">Kapalı</span>' : s.barbers ? "" : ' <span class="tag mut">Kurulmadı</span>'}<div class="soft small">${day(s.createdAt)}</div></td>
+  ${picked.size ? `<div class="note" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;box-shadow:inset 0 0 0 1.5px var(--bad)"><span><b>${picked.size} dükkân seçildi.</b> ${bulkAsk ? "Hesapları, ustaları ve randevularıyla birlikte kalıcı olarak silinecek." : ""}</span>
+    <span class="mini">${bulkAsk ? `<button class="btn light sm" data-act="bulkNo">Vazgeç</button><button class="btn danger sm" data-act="bulkYes">Evet, ${picked.size} dükkânı sil</button>` : `<button class="btn light sm" data-act="pickNone">Seçimi kaldır</button><button class="btn danger sm" data-act="bulkAsk">Seçilenleri sil</button>`}</span></div>` : ""}
+  <div class="tbl"><table><thead><tr><th style="width:34px"><input type="checkbox" aria-label="Hepsini seç" data-pickall ${list.length && picked.size === list.length ? "checked" : ""} style="width:18px;height:18px"></th><th>Dükkân</th><th>Bağlantı</th><th>Sahip girişi</th><th class="n">Usta</th><th class="n">Randevu</th><th>Son randevu</th><th>Not</th><th></th></tr></thead><tbody>
+    ${list.map(s => `<tr class="${s.disabled ? "off" : ""}"><td><input type="checkbox" aria-label="${esc(s.name)} seç" data-pick="${s.id}" ${picked.has(s.id) ? "checked" : ""} style="width:18px;height:18px"></td><td><b>${esc(s.name)}</b>${s.disabled ? ' <span class="tag iptal">Kapalı</span>' : s.barbers ? "" : ' <span class="tag mut">Kurulmadı</span>'}<div class="soft small">${day(s.createdAt)}</div></td>
       <td>${editSlug === s.id ? `<form class="inline" data-slug="${s.id}" novalidate><input id="sl-${s.id}" value="${esc(s.slug)}" style="min-width:140px"><button class="btn sm" type="submit">Kaydet</button></form>` : `<a class="link mono" href="/${esc(s.slug)}" target="_blank" rel="noopener">/${esc(s.slug)}</a> <button class="link small soft" data-act="editSlug" data-id="${s.id}">değiştir</button>`}</td>
       <td class="mono small">${esc(s.owner || "—")}</td><td class="n">${s.barbers}</td><td class="n">${s.bookings}${s.open ? ` <span class="soft">(${s.open} açık)</span>` : ""}</td><td>${day(s.last)}</td>
       <td><input aria-label="Not" data-note="${s.id}" value="${esc(s.note)}" placeholder="Örn. Ahmet Bey, Kadıköy" style="min-width:160px;padding:7px 9px;font-size:.88rem"></td>
-      <td><div class="mini"><button class="btn sm" data-act="manage" data-id="${s.id}">Yönet</button><button class="btn light sm" data-act="reset" data-id="${s.id}" data-slug="${esc(s.slug)}">Sahip şifresini yenile</button><button class="btn light sm" data-act="toggle" data-id="${s.id}" data-d="${s.disabled ? 0 : 1}">${s.disabled ? "Aç" : "Kapat"}</button></div></td></tr>`).join("")
-      || `<tr><td colspan="8" class="soft">Henüz dükkân yok. Yukarıdan hesap oluştur.</td></tr>`}</tbody></table></div>
+      <td><div class="mini"><button class="btn sm" data-act="manage" data-id="${s.id}">Yönet</button><button class="btn light sm" data-act="reset" data-id="${s.id}" data-slug="${esc(s.slug)}">Sahip şifresini yenile</button><button class="btn light sm" data-act="toggle" data-id="${s.id}" data-d="${s.disabled ? 0 : 1}">${s.disabled ? "Aç" : "Kapat"}</button>${rowAsk === s.id ? `<button class="btn light sm" data-act="rowNo">Vazgeç</button><button class="btn danger sm" data-act="rowYes" data-id="${s.id}" data-slug="${esc(s.slug)}">Evet, sil</button>` : `<button class="btn danger sm" data-act="rowDel" data-id="${s.id}">Sil</button>`}</div></td></tr>`).join("")
+      || `<tr><td colspan="9" class="soft">Henüz dükkân yok. Yukarıdan hesap oluştur.</td></tr>`}</tbody></table></div>
   <div class="det" style="margin-top:28px;box-shadow:inset 0 0 0 1.5px var(--bad)"><h2 style="font-size:1.4rem">Tüm dükkânları sil</h2>
     <p class="soft small" style="margin:0">Bütün dükkânlar, giriş hesapları, ustalar, randevular ve müşteri kayıtları kalıcı olarak silinir; geri alınamaz. Yönetici hesabın kalır.</p>
     <form class="inline" id="wipeF" novalidate><label class="fld" for="wipeC"><span>Onay için <b>HEPSİNİ SİL</b> yaz</span><input id="wipeC" autocomplete="off"></label><button class="btn danger" type="submit">Tümünü kalıcı olarak sil</button></form></div>
@@ -146,6 +149,13 @@ document.addEventListener("click", async (e) => {
     case "copyReset": copy(credText([reset])); break;
     case "editSlug": editSlug = id; render(); break;
     case "reset": if (el.dataset.sure) { try { const r = await call("resetOwner", { id }); reset = { ...r, slug: el.dataset.slug }; render(); window.scrollTo(0, 0); } catch (x) { toast(x.message); } } else { el.dataset.sure = "1"; el.textContent = "Eski şifre geçersiz olacak · Onayla"; } break;
+    case "rowDel": rowAsk = id; render(); break;
+    case "rowNo": rowAsk = null; render(); break;
+    case "rowYes": try { await call("deleteShop", { id, confirm: el.dataset.slug }); rowAsk = null; picked.delete(id); if (detail === id) { detail = null; D = null; } toast("Dükkân silindi"); await load(); } catch (x) { toast(x.message); } break;
+    case "pickNone": picked.clear(); bulkAsk = false; render(); break;
+    case "bulkAsk": bulkAsk = true; render(); break;
+    case "bulkNo": bulkAsk = false; render(); break;
+    case "bulkYes": try { const r = await call("deleteShops", { ids: [...picked], confirm: true }); toast(r.deleted + " dükkân silindi"); if (detail && picked.has(detail)) { detail = null; D = null; } picked.clear(); bulkAsk = false; await load(); } catch (x) { toast(x.message); } break;
     case "manage": openDetail(id); break;
     case "closeDetail": detail = null; D = null; render(); break;
     case "enter": try { const r = await call("enter", { id }); window.open("/usta", "_blank") || (location.href = "/usta"); toast("Dükkân paneli açıldı"); } catch (x) { toast(x.message); } break;
@@ -169,7 +179,9 @@ document.addEventListener("submit", async (e) => {
   if (f.id === "delF") { try { await call("deleteShop", { id: D.shop.id, confirm: $("delC").value.trim() }); toast("Dükkân silindi"); detail = null; D = null; await load(); } catch (x) { toast(x.message); } }
   if (f.dataset.slug) { const id = f.dataset.slug; try { await call("slug", { id, slug: $("sl-" + id).value }); editSlug = null; await load(); toast("Bağlantı değişti"); } catch (x) { toast(x.message); } }
 });
-document.addEventListener("change", async (e) => { const t = e.target; if (t.dataset.note) { try { await call("note", { id: t.dataset.note, note: t.value }); toast("Not kaydedildi"); } catch (x) { toast(x.message); } } });
+document.addEventListener("change", async (e) => { const t = e.target;
+  if (t.dataset.pick) { t.checked ? picked.add(t.dataset.pick) : picked.delete(t.dataset.pick); bulkAsk = false; render(); return; }
+  if (t.hasAttribute("data-pickall")) { picked = t.checked ? new Set((shops || []).map(x => x.id)) : new Set(); bulkAsk = false; render(); return; } if (t.dataset.note) { try { await call("note", { id: t.dataset.note, note: t.value }); toast("Not kaydedildi"); } catch (x) { toast(x.message); } } });
 (async () => {
   try { const r = await call("status"); admin = r.admin; needsSetup = r.needsSetup; } catch { $("root").innerHTML = `<div class="auth"><div class="empty"><b>Bağlanılamadı.</b> Sayfayı yenile.</div></div>`; return; }
   admin ? load() : renderAuth();

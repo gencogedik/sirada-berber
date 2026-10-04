@@ -74,6 +74,13 @@ export default handle(async (req, res) => {
     }
     return send(res, 200, { made });
   }
+  if (a === "deleteShops") {  // delete the selected shops (the list's checkboxes)
+    const ids = Array.isArray(b.ids) ? b.ids.slice(0, 200).map(String) : [];
+    if (!ids.length) return fail(res, 400, "Silinecek dükkân seç.");
+    if (b.confirm !== true) return fail(res, 400, "Silmeyi onayla.");
+    let n = 0; for (const id of ids) { const x = await hgetJSON("shops", id); if (x) { await purgeShop(x); n++; } }
+    return send(res, 200, { deleted: n });
+  }
   if (a === "deleteAll") {   // wipe every shop, its accounts and bookings — typed confirmation required
     if (b.confirm !== "HEPSİNİ SİL") return fail(res, 400, "Onay için tam olarak HEPSİNİ SİL yaz.");
     const all = Object.values(await hallJSON("shops"));

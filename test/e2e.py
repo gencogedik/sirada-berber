@@ -178,6 +178,17 @@ async def main():
         utxt = await up.inner_text("#root")
         ok("admin entered shop panel as owner", "Yönetici modu" in utxt and "Ustalar" in utxt and "Ayarlar" in utxt)
         await up.screenshot(path=OUT + "09_admin_in_shop.png")
+        # delete one shop from its row, then two with checkboxes
+        await ad.goto(BASE + "/yonetim"); await ad.wait_for_timeout(700)
+        n0 = len(get_shops := None or []) if False else None
+        before = await ad.locator("tbody tr").count()
+        s3 = rows[2].split("\t")[1].strip(); s4 = rows[3].split("\t")[1].strip(); s5 = rows[4].split("\t")[1].strip()
+        await ad.click(f"tr:has-text('/{s3}') [data-act=rowDel]"); await ad.click(f"tr:has-text('/{s3}') [data-act=rowYes]"); await ad.wait_for_timeout(900)
+        ok("row delete removes one shop", await ad.locator("tbody tr").count() == before - 1 and post(f"/api/public?shop={s3}&action=book", {})[0] == 404)
+        await ad.check(f"tr:has-text('/{s4}') [data-pick]"); await ad.check(f"tr:has-text('/{s5}') [data-pick]"); await ad.wait_for_timeout(200)
+        await ad.click("[data-act=bulkAsk]"); await ad.click("[data-act=bulkYes]"); await ad.wait_for_timeout(1200)
+        ok("bulk delete removes selected shops", await ad.locator("tbody tr").count() == before - 3 and post(f"/api/public?shop={s4}&action=book", {})[0] == 404 and post(f"/api/public?shop={s5}&action=book", {})[0] == 404)
+        await ad.screenshot(path=OUT + "10_list_delete.png", full_page=False)
         # wipe everything
         await ad.goto(BASE + "/yonetim"); await ad.wait_for_timeout(700)
         await ad.fill("#wipeC", "yanlış"); await ad.click("#wipeF button[type=submit]"); await ad.wait_for_timeout(400)
