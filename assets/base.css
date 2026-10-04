@@ -1,0 +1,109 @@
+/* Sırada — shared look for the customer app and the barber app.
+   Paper stock, ink type, one yellow highlighter. Hairlines instead of boxes; ink fill marks the one primary action. */
+:root {
+  --paper: #f4f0e7; --card: #fbf9f4; --ink: #1d1b19; --soft: #77716a; --hair: #e3dccd; --hair-2: #cfc6b4;
+  --band: #f6d24a; --on-band: #1d1b19; --ok: #3d6b2c; --bad: #b0442a; --warn: #9c6214; --scrim: rgba(29, 27, 25, .45);
+  --serif: "DM Serif Display", Georgia, "Times New Roman", serif;
+  --sans: "Instrument Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --r: 10px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root {
+  --paper: #1b1a17; --card: #23211d; --ink: #f2ede3; --soft: #a59e90; --hair: #34312b; --hair-2: #4a463e;
+  --band: #ebc83f; --on-band: #1d1b19; --ok: #a6c98d; --bad: #f09479; --warn: #e2ad62; --scrim: rgba(0, 0, 0, .6); color-scheme: dark } }
+
+* { box-sizing: border-box }
+html { -webkit-text-size-adjust: 100% }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; padding: 0 16px; padding-block: env(safe-area-inset-top, 0px) calc(40px + env(safe-area-inset-bottom, 0px)) }
+button, input, select, textarea { font: inherit; color: inherit }
+button { cursor: pointer; background: none; border: 0; padding: 0 }
+a { color: inherit }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 6px }
+[hidden] { display: none !important }
+.wrap { max-width: 760px; margin: 0 auto }
+.serif { font-family: var(--serif); font-weight: 400 }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums }
+.soft { color: var(--soft) }
+.small { font-size: .875rem }
+.lbl { font-size: .78rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--soft) }
+.band { background: linear-gradient(transparent 14%, var(--band) 14%, var(--band) 90%, transparent 90%); color: var(--on-band); padding: 0 .1em; box-decoration-break: clone; -webkit-box-decoration-break: clone }
+h1, h2, h3 { font-family: var(--serif); font-weight: 400; line-height: 1.05; margin: 0; text-wrap: balance }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 46px; padding: 0 18px; border-radius: var(--r); font-weight: 600; background: var(--ink); color: var(--paper); text-decoration: none; white-space: nowrap }
+.btn:hover { opacity: .9 }
+.btn.light { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--hair-2) }
+.btn.light:hover { box-shadow: inset 0 0 0 1.5px var(--ink); opacity: 1 }
+.btn.y { background: var(--band); color: var(--on-band) }
+.btn.danger { background: transparent; color: var(--bad); box-shadow: inset 0 0 0 1.5px currentColor }
+.btn.sm { min-height: 36px; padding: 0 12px; font-size: .875rem; border-radius: 8px }
+.btn.full { width: 100% }
+.btn:disabled { opacity: .4; cursor: not-allowed }
+.link { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hair-2); font-weight: 600 }
+.link:hover { text-decoration-color: var(--ink) }
+
+/* form */
+.fld { display: grid; gap: 6px }
+.fld > span { font-size: .85rem; font-weight: 600 }
+input, select, textarea { width: 100%; min-width: 0; background: var(--card); border: 1.5px solid var(--hair-2); border-radius: var(--r); padding: 12px 13px; font-size: 1rem }
+textarea { resize: vertical; min-height: 76px }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--ink) }
+.err { color: var(--bad); font-weight: 600; font-size: .9rem }
+.grid2 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) }
+
+/* choice chips */
+.chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; margin: 0 -2px; scrollbar-width: none }
+.chips::-webkit-scrollbar { display: none }
+.chip { flex: none; display: grid; gap: 1px; text-align: left; padding: 10px 14px; border-radius: var(--r); background: var(--card); box-shadow: inset 0 0 0 1.5px var(--hair) }
+.chip:hover { box-shadow: inset 0 0 0 1.5px var(--hair-2) }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); box-shadow: none }
+.chip[aria-pressed="true"] .soft { color: color-mix(in srgb, var(--paper) 70%, transparent) }
+.chip b { font-weight: 600 }
+.chip .soft { font-size: .82rem }
+
+/* day strip */
+.days { display: flex; gap: 6px; overflow-x: auto; padding: 2px 2px 6px; margin: 0 -2px; scrollbar-width: none }
+.days::-webkit-scrollbar { display: none }
+.day { flex: none; width: 58px; padding: 8px 0 9px; border-radius: var(--r); display: grid; justify-items: center; gap: 0; position: relative }
+.day .dn { font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--soft) }
+.day .dd { font-family: var(--serif); font-size: 1.5rem; line-height: 1.1 }
+.day .dm { font-size: .72rem; color: var(--soft) }
+.day:hover { background: var(--card) }
+.day[aria-pressed="true"] { background: var(--band); color: var(--on-band) }
+.day[aria-pressed="true"] .dn, .day[aria-pressed="true"] .dm { color: var(--on-band) }
+.day:disabled { opacity: .35; cursor: not-allowed; background: none }
+.day .cnt { position: absolute; top: -5px; right: 2px; min-width: 18px; padding: 1px 5px; border-radius: 999px; background: var(--ink); color: var(--paper); font-family: var(--mono); font-size: .62rem; font-weight: 600; line-height: 1.4 }
+.days { padding-top: 8px }
+
+/* time grid */
+.times { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)) }
+.time { min-height: 44px; border-radius: var(--r); background: var(--card); box-shadow: inset 0 0 0 1.5px var(--hair); font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums }
+.time:hover:not(:disabled) { background: var(--band); color: var(--on-band); box-shadow: none }
+.time:disabled { background: transparent; box-shadow: none; color: var(--hair-2); text-decoration: line-through; cursor: default }
+
+.empty { padding: 18px; border-radius: var(--r); background: var(--card); color: var(--soft) }
+.empty b { color: var(--ink) }
+.note { padding: 12px 14px; border-radius: var(--r); background: var(--card); font-size: .92rem; color: var(--soft) }
+.note b { color: var(--ink) }
+
+/* sheet */
+.scrim { position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; align-items: flex-end; justify-content: center }
+@media (min-width: 700px) { .scrim { align-items: center; padding: 24px } }
+.sheet { width: 100%; max-width: 480px; max-height: calc(100% - 20px); overflow-y: auto; background: var(--paper); border-radius: 18px 18px 0 0; padding: 22px 18px calc(20px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 16px; animation: rise .2s ease-out }
+@media (min-width: 700px) { .sheet { border-radius: 18px; padding-bottom: 22px } }
+@keyframes rise { from { transform: translateY(18px); opacity: .5 } }
+.sheet h2 { font-size: 1.9rem }
+.rows { display: grid; border-top: 1px solid var(--hair) }
+.rows > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair) }
+.rows > div > :first-child { color: var(--soft) }
+.rows > div > :last-child { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums }
+.acts { display: flex; gap: 10px; flex-wrap: wrap }
+.acts > .btn { flex: 1 1 140px }
+
+.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 12px); opacity: 0; background: var(--ink); color: var(--paper); padding: 10px 16px; border-radius: 999px; font-weight: 600; font-size: .9rem; transition: .2s; z-index: 60; pointer-events: none; max-width: calc(100% - 32px); text-align: center }
+.toast.on { opacity: 1; transform: translate(-50%, 0) }
+.tag { display: inline-block; font-size: .7rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; vertical-align: 2px; white-space: nowrap; box-shadow: inset 0 0 0 1.2px currentColor }
+.tag.bekliyor { background: var(--band); color: var(--on-band); box-shadow: none }
+.tag.geldi { color: var(--ok) } .tag.gelmedi { color: var(--warn) } .tag.iptal { color: var(--bad) } .tag.mut { color: var(--soft) }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important } }

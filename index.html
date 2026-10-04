@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Randevu al</title>
+<meta name="description" content="Berber randevunu birkaç saniyede al.">
+<meta name="theme-color" content="#f4f0e7">
+<link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="/assets/base.css">
+<style>
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px 6px }
+header.top .shop { font-family: var(--serif); font-size: 1.35rem; line-height: 1.1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.hero { padding-block: 26px 4px; display: grid; gap: 10px }
+.hero h1 { font-size: clamp(2.6rem, 11vw, 4rem) }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .9rem; color: var(--soft) }
+.meta .mono { color: var(--ink); user-select: all }
+section.step { padding-block: 24px 0; display: grid; gap: 10px }
+section.step > .h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px }
+section.step > .h h2 { font-size: 1.45rem }
+.quick { margin-top: 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: var(--r); background: var(--card) }
+.quick b { font-family: var(--mono); font-size: 1.05rem }
+.group { display: grid; gap: 8px; margin-top: 4px }
+.ticket { display: grid; gap: 4px; padding: 22px 20px; border-radius: 16px; background: var(--card) }
+.ticket .t { font-family: var(--mono); font-size: 3rem; font-weight: 600; line-height: 1 }
+.done { padding-block: 28px 0; display: grid; gap: 14px }
+.mine { display: grid; border-top: 1px solid var(--hair); margin-top: 8px }
+.mine > a { display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--hair); text-decoration: none }
+.mine .tm { font-family: var(--mono); font-weight: 600; font-size: 1.1rem; line-height: 1.1 }
+.mine .tm small { display: block; font-family: var(--sans); font-weight: 500; font-size: .75rem; color: var(--soft) }
+footer { margin-top: 48px; padding-top: 14px; border-top: 1px solid var(--hair); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .85rem; color: var(--soft) }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><span class="shop" id="shop">&nbsp;</span><button class="link small" data-act="mine" id="mineBtn" hidden>Randevularım</button></header>
+  <main id="app"><div class="empty" style="margin-top:30px">Boş saatler yükleniyor…</div></main>
+  <footer><span id="foot"></span><a class="link" href="/usta">Usta girişi</a></footer>
+</div>
+<div id="sheet"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+const DAYS = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"], DAYS_L = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+const MON = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const pad = (n) => String(n).padStart(2, "0");
+const toMin = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ""); return m ? +m[1] * 60 + +m[2] : NaN; };
+const fmt = (m) => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
+const addDays = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const wd = (d) => new Date(d + "T00:00:00Z").getUTCDay();
+const tl = (n) => (Number(n) || 0).toLocaleString("tr-TR") + " ₺";
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2800); }
+async function api(action, data) {
+  const r = await fetch("/api/public?action=" + action + (data && data.qs ? "&" + data.qs : ""), data && !data.qs ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {});
+  let j = {}; try { j = await r.json(); } catch {}
+  if (!r.ok) throw Object.assign(new Error(j.error || "Bağlantı hatası. Tekrar dene."), { status: r.status });
+  return j;
+}
+
+let S = { cfg: null, busy: [], now: null, setup: false };
+let sel = { service: null, barber: "any", date: null };
+let view = "book", done = null, manage = null, sheet = null, sending = false;
+
+const today = () => S.now.date;
+function dayName(d) { return d === today() ? "Bugün" : d === addDays(today(), 1) ? "Yarın" : DAYS[wd(d)]; }
+function dayLong(d) { const x = new Date(d + "T00:00:00Z"); const rel = d === today() ? "Bugün, " : d === addDays(today(), 1) ? "Yarın, " : ""; return rel + x.getUTCDate() + " " + MON[x.getUTCMonth()] + " " + DAYS_L[wd(d)]; }
+const svc = (id) => S.cfg.services.find(s => s.id === id);
+const bname = (id) => (S.cfg.barbers.find(b => b.id === id) || {}).name || "Usta";
+function nowMin() { const t = new Date(Date.now() + 3 * 3600e3); return t.getUTCHours() * 60 + t.getUTCMinutes(); }
+function busySet() { const s = new Set(); for (const [d, b, t, dur] of S.busy) for (let m = toMin(t); m < toMin(t) + dur; m += 30) s.add(d + "|" + b + "|" + m); return s; }
+function inHours(m, dur) { const c = S.cfg; if (m < toMin(c.open) || m + dur > toMin(c.close)) return false; const bs = toMin(c.breakStart), be = toMin(c.breakEnd); return !(bs < be && m < be && bs < m + dur); }
+function freeBarber(set, d, m, dur) { const list = sel.barber === "any" ? S.cfg.barbers.map(b => b.id) : [sel.barber];
+  return list.find(b => { for (let x = m; x < m + dur; x += 30) if (set.has(d + "|" + b + "|" + x)) return false; return true; }) || null; }
+function times(d, dur, set = busySet()) {
+  if (S.cfg.closed.includes(wd(d))) return [];
+  const out = [], min = d === today() ? nowMin() + Number(S.cfg.minNotice || 0) : -1;
+  for (let m = toMin(S.cfg.open); m + dur <= toMin(S.cfg.close); m += 30) {
+    if (!inHours(m, dur) || (d === today() && m <= nowMin())) continue;
+    out.push({ m, ok: m > min && !!freeBarber(set, d, m, dur) });
+  }
+  return out;
+}
+const daysList = () => Array.from({ length: Number(S.cfg.horizon) || 14 }, (_, i) => addDays(today(), i));
+function earliest() { const s = svc(sel.service); if (!s) return null; const set = busySet(); for (const d of daysList()) { const t = times(d, s.dur, set).find(x => x.ok); if (t) return { d, m: t.m }; } return null; }
+
+function render() {
+  if (!S.cfg) return;
+  $("shop").textContent = S.cfg.shopName; document.title = S.cfg.shopName + " · Randevu al";
+  $("foot").textContent = S.cfg.shopName;
+  $("mineBtn").hidden = !store.get("sirada_mine", []).length || view === "mine";
+  const app = $("app");
+  if (S.setup) { app.innerHTML = `<div class="hero"><h1>Yakında <span class="band">açılıyor.</span></h1><p class="soft">Bu dükkânın online randevusu henüz kurulmadı. Dükkân sahibiysen <a class="link" href="/usta">usta girişinden</a> kurulumu tamamla.</p></div>`; return; }
+  if (manage) return renderManage();
+  if (done) return renderDone();
+  if (view === "mine") return renderMine();
+  if (!svc(sel.service)) sel.service = S.cfg.services[0]?.id;
+  if (sel.barber !== "any" && !S.cfg.barbers.some(b => b.id === sel.barber)) sel.barber = "any";
+  const s = svc(sel.service), set = busySet(), days = daysList();
+  if (!sel.date || !days.includes(sel.date) || S.cfg.closed.includes(wd(sel.date))) sel.date = days.find(d => times(d, s.dur, set).some(x => x.ok)) || days.find(d => !S.cfg.closed.includes(wd(d))) || today();
+  const ts = times(sel.date, s.dur, set), fast = earliest();
+  const grp = (l, a) => a.length ? `<div class="group"><span class="lbl">${l}</span><div class="times">${a.map(x => `<button class="time" data-act="pick" data-m="${x.m}" ${x.ok ? "" : "disabled"}>${fmt(x.m)}</button>`).join("")}</div></div>` : "";
+  const c = S.cfg;
+  app.innerHTML = `
+  <section class="hero"><h1>Sıranı <span class="band">al.</span></h1>
+    <div class="meta">${c.address ? `<span>${esc(c.address)}</span>` : ""}${c.phone ? `<span>Tel <span class="mono">${esc(c.phone)}</span></span>` : ""}<span>${esc(c.open)}–${esc(c.close)}${c.closed.length ? " · " + c.closed.map(d => DAYS_L[d]).join(", ") + " kapalı" : ""}</span></div></section>
+  ${fast ? `<div class="quick"><span><span class="soft small">En erken boş saat</span><br><b>${dayName(fast.d)} ${fmt(fast.m)}</b></span><button class="btn y sm" data-act="fast" data-d="${fast.d}" data-m="${fast.m}">Bu saati al</button></div>` : ""}
+  <section class="step"><div class="h"><h2>Hizmet</h2></div>
+    <div class="chips">${c.services.map(x => `<button class="chip" data-act="svc" data-v="${x.id}" aria-pressed="${sel.service === x.id}"><b>${esc(x.name)}</b><span class="soft">${x.dur} dk · ${tl(x.price)}</span></button>`).join("")}</div></section>
+  ${c.barbers.length > 1 ? `<section class="step"><div class="h"><h2>Usta</h2></div>
+    <div class="chips"><button class="chip" data-act="barber" data-v="any" aria-pressed="${sel.barber === "any"}"><b>Fark etmez</b><span class="soft">İlk boş usta</span></button>
+    ${c.barbers.map(b => `<button class="chip" data-act="barber" data-v="${b.id}" aria-pressed="${sel.barber === b.id}"><b>${esc(b.name)}</b><span class="soft">Usta</span></button>`).join("")}</div></section>` : ""}
+  <section class="step"><div class="h"><h2>Gün</h2></div>
+    <div class="days">${days.map(d => { const x = new Date(d + "T00:00:00Z"); return `<button class="day" data-act="day" data-v="${d}" aria-pressed="${sel.date === d}" ${c.closed.includes(wd(d)) ? "disabled" : ""}><span class="dn">${dayName(d)}</span><span class="dd">${x.getUTCDate()}</span><span class="dm">${MON[x.getUTCMonth()]}</span></button>`; }).join("")}</div></section>
+  <section class="step"><div class="h"><h2>Saat</h2><span class="soft small">${esc(dayLong(sel.date))} · ${s.dur} dk</span></div>
+    ${ts.some(x => x.ok) ? grp("Sabah", ts.filter(x => x.m < 720)) + grp("Öğleden sonra", ts.filter(x => x.m >= 720 && x.m < 1020)) + grp("Akşam", ts.filter(x => x.m >= 1020))
+      : `<div class="empty"><b>${c.closed.includes(wd(sel.date)) ? "Bu gün kapalıyız." : "Bu gün için boş saat kalmadı."}</b>${fast ? ` En erken: ${dayLong(fast.d)} ${fmt(fast.m)}.` : ""}</div>`}
+  </section>`;
+}
+
+function renderSheet() {
+  const w = $("sheet");
+  if (!sheet) { w.innerHTML = ""; document.body.style.overflow = ""; return; }
+  document.body.style.overflow = "hidden";
+  const s = svc(sel.service), who = store.get("sirada_who", {});
+  const b = freeBarber(busySet(), sheet.d, sheet.m, s.dur);
+  w.innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh">
+    <h2 id="sh">${esc(dayLong(sheet.d))}, <span class="band">${fmt(sheet.m)}</span></h2>
+    <div class="rows"><div><span>Hizmet</span><span>${esc(s.name)}</span></div><div><span>Usta</span><span>${b ? esc(bname(b)) : "—"}</span></div>
+      <div><span>Süre</span><span>${fmt(sheet.m)}–${fmt(sheet.m + s.dur)}</span></div><div><span>Ücret (dükkânda)</span><span>${tl(s.price)}</span></div></div>
+    <form id="f" class="grid2" novalidate>
+      <label class="fld" for="fn"><span>Ad soyad</span><input id="fn" autocomplete="name" value="${esc(sheet.name ?? who.name ?? "")}" placeholder="Ahmet Yılmaz"></label>
+      <label class="fld" for="fp"><span>Telefon</span><input id="fp" type="tel" inputmode="tel" autocomplete="tel" value="${esc(sheet.phone ?? who.phone ?? "")}" placeholder="05xx xxx xx xx"></label>
+      <label class="fld" for="fo" style="grid-column:1/-1"><span>Not <span class="soft">(isteğe bağlı)</span></span><textarea id="fo" maxlength="240" placeholder="Örn. yanlar 2 numara">${esc(sheet.note || "")}</textarea></label>
+    </form>
+    ${sheet.err ? `<div class="err">${esc(sheet.err)}</div>` : ""}
+    <div class="acts"><button class="btn light" data-act="close">Vazgeç</button><button class="btn" data-act="confirm" ${sending ? "disabled" : ""}>${sending ? "Kaydediliyor…" : "Onayla"}</button></div>
+  </div></div>`;
+  setTimeout(() => { const n = $("fn"), p = $("fp"); (n && !n.value ? n : p && !p.value ? p : null)?.focus(); }, 40);
+}
+async function confirm() {
+  sheet.name = $("fn").value; sheet.phone = $("fp").value; sheet.note = $("fo").value;
+  if (sheet.name.trim().length < 2) { sheet.err = "Adını yaz."; return renderSheet(); }
+  if (!/^0?5\d{9}$/.test(sheet.phone.replace(/\D/g, "").replace(/^90/, ""))) { sheet.err = "Telefonu 05xx xxx xx xx biçiminde yaz."; return renderSheet(); }
+  sending = true; sheet.err = ""; renderSheet();
+  try {
+    const r = await api("book", { serviceId: sel.service, barberId: sel.barber, date: sheet.d, time: fmt(sheet.m), name: sheet.name, phone: sheet.phone, note: sheet.note });
+    store.set("sirada_who", { name: sheet.name.trim(), phone: sheet.phone.trim() });
+    const mine = store.get("sirada_mine", []).filter(x => x.id !== r.booking.id); mine.unshift({ id: r.booking.id, k: r.key, date: r.booking.date, time: r.booking.time }); store.set("sirada_mine", mine.slice(0, 20));
+    done = { ...r.booking, key: r.key }; sheet = null; sending = false;
+    renderSheet(); render(); window.scrollTo(0, 0); load();
+  } catch (e) { sending = false; sheet.err = e.message; if (e.status === 409) { await load(); } renderSheet(); }
+}
+function manageUrl(id, k) { return location.origin + "/?r=" + encodeURIComponent(id) + "&k=" + encodeURIComponent(k); }
+function renderDone() {
+  const b = done;
+  $("app").innerHTML = `<section class="done">
+    <h1 style="font-size:2.6rem">Sıran <span class="band">hazır.</span></h1>
+    <div class="ticket"><span class="lbl">${esc(dayLong(b.date))}</span><span class="t">${b.time}</span><span>${esc(b.serviceName)} · ${esc(b.barberName)} · ${tl(b.price)}</span>${b.note ? `<span class="soft small">Notun: ${esc(b.note)}</span>` : ""}</div>
+    <button class="btn y full" data-act="ics">Takvime ekle · 1 saat önce hatırlat</button>
+    <div class="acts"><button class="btn light" data-act="copyLink">Randevu bağlantısını kopyala</button><button class="btn light" data-act="again">Yeni randevu</button></div>
+    <p class="soft small" style="margin:0">Randevun bu cihazda “Randevularım” altında durur. Başka cihazdan görmek ya da iptal etmek için bağlantıyı sakla.${Number(S.cfg.cancelHours) ? ` İptal en geç ${S.cfg.cancelHours} saat önce yapılabilir.` : ""}</p>
+  </section>`;
+}
+async function renderMine() {
+  const list = store.get("sirada_mine", []);
+  $("app").innerHTML = `<section class="hero"><h1>Randevu<span class="band">larım</span></h1><p class="soft" style="margin:0">Bu cihazdan aldığın randevular.</p></section>
+    <div class="mine" id="mineList">${list.map(x => `<a href="/?r=${encodeURIComponent(x.id)}&k=${encodeURIComponent(x.k)}" data-act="open" data-id="${esc(x.id)}" data-k="${esc(x.k)}"><span class="tm">${esc(x.time)}<small>${esc(dayName(x.date))}</small></span><span id="m-${esc(x.id)}" class="soft small">Yükleniyor…</span><span class="soft">›</span></a>`).join("") || `<div class="empty" style="margin-top:12px">Henüz randevun yok.</div>`}</div>
+    <div style="margin-top:18px"><button class="btn light" data-act="book">Yeni randevu al</button></div>`;
+  for (const x of list) api("booking", { qs: "id=" + encodeURIComponent(x.id) + "&k=" + encodeURIComponent(x.k) }).then(r => {
+    const e = $("m-" + x.id); if (!e) return; const b = r.booking;
+    e.innerHTML = `${esc(b.serviceName)} · ${esc(b.barberName)} <span class="tag ${b.status}">${statusText(b)}</span>`;
+    e.previousElementSibling.innerHTML = `${esc(b.time)}<small>${esc(dayName(b.date))} ${new Date(b.date + "T00:00:00Z").getUTCDate()} ${MON[new Date(b.date + "T00:00:00Z").getUTCMonth()]}</small>`;
+  }).catch(() => { const e = $("m-" + x.id); if (e) e.textContent = "Bulunamadı"; });
+}
+function statusText(b) { return b.status === "iptal" ? (b.cancelledBy && b.cancelledBy.startsWith("dukkan") ? "Dükkân iptal etti" : "İptal") : b.status === "geldi" ? "Tamamlandı" : b.status === "gelmedi" ? "Gelinmedi" : "Onaylı"; }
+function renderManage() {
+  const m = manage;
+  if (m.loading) { $("app").innerHTML = `<div class="empty" style="margin-top:30px">Randevu yükleniyor…</div>`; return; }
+  if (m.error) { $("app").innerHTML = `<div class="hero"><h1>Randevu <span class="band">bulunamadı.</span></h1><p class="soft">${esc(m.error)}</p><div><button class="btn" data-act="book">Randevu al</button></div></div>`; return; }
+  const b = m.booking;
+  $("app").innerHTML = `<section class="done">
+    <span class="lbl">Randevun</span>
+    <div class="ticket"><span class="lbl">${esc(dayLong(b.date))}</span><span class="t" style="${b.status === "iptal" ? "text-decoration:line-through;color:var(--soft)" : ""}">${b.time}</span><span>${esc(b.serviceName)} · ${esc(b.barberName)} · ${tl(b.price)}</span>
+      <span style="margin-top:6px"><span class="tag ${b.status}">${statusText(b)}</span></span>${b.note ? `<span class="soft small">Notun: ${esc(b.note)}</span>` : ""}</div>
+    ${b.status === "bekliyor" ? `<button class="btn y full" data-act="ics">Takvime ekle · 1 saat önce hatırlat</button>
+      ${m.canCancel ? (m.ask ? `<div class="note"><b>Randevu iptal edilsin mi?</b> Saat başkalarına açılır.<div class="acts" style="margin-top:10px"><button class="btn light" data-act="noCancel">Vazgeç</button><button class="btn danger" data-act="doCancel">Evet, iptal et</button></div></div>`
+        : `<button class="btn danger full" data-act="askCancel">Randevuyu iptal et</button>`) : `<p class="soft small" style="margin:0">İptal süresi geçti. Gelemeyeceksen dükkânı ara${S.cfg.phone ? `: <span class="mono" style="color:var(--ink)">${esc(S.cfg.phone)}</span>` : ""}.</p>`}` : ""}
+    <div><button class="btn light" data-act="book">Yeni randevu al</button></div></section>`;
+}
+async function openManage(id, k) {
+  manage = { id, k, loading: true }; render();
+  try { const r = await api("booking", { qs: "id=" + encodeURIComponent(id) + "&k=" + encodeURIComponent(k) }); manage = { id, k, booking: r.booking, canCancel: r.canCancel }; }
+  catch (e) { manage = { id, k, error: e.message }; }
+  render();
+}
+function ics(b) {
+  const [y, mo, d] = b.date.split("-").map(Number), st = toMin(b.time);
+  const s = new Date(Date.UTC(y, mo - 1, d, Math.floor(st / 60) - 3, st % 60)), e = new Date(s.getTime() + b.dur * 60000);
+  const z = (t) => t.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, ""), c = (v) => String(v || "").replace(/[\\;,\n]/g, " ");
+  const txt = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Sirada//TR", "METHOD:PUBLISH", "BEGIN:VEVENT", "UID:" + b.id + "@sirada", "DTSTAMP:" + z(new Date()), "DTSTART:" + z(s), "DTEND:" + z(e),
+    "SUMMARY:" + c(S.cfg.shopName) + " - " + c(b.serviceName), "DESCRIPTION:" + c(b.barberName) + " ile randevu", "LOCATION:" + c(S.cfg.address || S.cfg.shopName),
+    "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Berber randevun 1 saat sonra", "TRIGGER:-PT1H", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([txt], { type: "text/calendar" })); a.download = "berber-randevu-" + b.date + ".ics"; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+async function copyText(t, ok) { try { await navigator.clipboard.writeText(t); toast(ok); } catch { prompt("Kopyala:", t); } }
+
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const a = el.dataset.act;
+  if (a === "close" && e.target !== el && el.classList.contains("scrim")) return;
+  if (a === "open") { e.preventDefault(); history.pushState({}, "", el.getAttribute("href")); return openManage(el.dataset.id, el.dataset.k); }
+  switch (a) {
+    case "svc": sel.service = el.dataset.v; render(); break;
+    case "barber": sel.barber = el.dataset.v; render(); break;
+    case "day": sel.date = el.dataset.v; render(); break;
+    case "pick": sheet = { d: sel.date, m: +el.dataset.m }; renderSheet(); break;
+    case "fast": sel.date = el.dataset.d; render(); sheet = { d: el.dataset.d, m: +el.dataset.m }; renderSheet(); break;
+    case "close": if (!sending) { sheet = null; renderSheet(); } break;
+    case "confirm": if (!sending) confirm(); break;
+    case "again": case "book": done = null; manage = null; view = "book"; history.replaceState({}, "", "/"); render(); window.scrollTo(0, 0); break;
+    case "mine": done = null; manage = null; view = "mine"; history.replaceState({}, "", "/"); render(); window.scrollTo(0, 0); break;
+    case "ics": ics(done || manage.booking); break;
+    case "copyLink": copyText(manageUrl(done.id, done.key), "Bağlantı kopyalandı"); break;
+    case "askCancel": manage.ask = true; render(); break;
+    case "noCancel": manage.ask = false; render(); break;
+    case "doCancel": try { const r = await api("cancel", { id: manage.id, k: manage.k }); manage.booking = r.booking; manage.canCancel = false; manage.ask = false; toast("Randevun iptal edildi"); load(); } catch (err) { toast(err.message); } render(); break;
+  }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet && !sending) { sheet = null; renderSheet(); } if (e.key === "Enter" && sheet && e.target.tagName === "INPUT") { e.preventDefault(); if (!sending) confirm(); } });
+window.addEventListener("popstate", () => { const p = new URLSearchParams(location.search); if (p.get("r")) openManage(p.get("r"), p.get("k")); else { manage = null; render(); } });
+
+async function load() {
+  try { const r = await api("init"); S = r; if (!sheet) render(); }
+  catch (e) { if (!S.cfg) $("app").innerHTML = `<div class="empty" style="margin-top:30px"><b>Bağlanılamadı.</b> İnternetini kontrol edip sayfayı yenile.</div>`; }
+}
+(async () => {
+  await load();
+  const p = new URLSearchParams(location.search);
+  if (p.get("r") && S.cfg) openManage(p.get("r"), p.get("k") || "");
+  setInterval(() => { if (document.visibilityState === "visible" && !sheet && view === "book" && !done && !manage) load(); }, 30000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !sheet) load(); });
+})();
+</script>
+</body>
+</html>

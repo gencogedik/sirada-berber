@@ -1,0 +1,9 @@
+{
+  "name": "sirada-berber",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Sırada — berberler için online randevu: müşteri sayfası ve usta paneli",
+  "scripts": { "dev": "node dev.mjs" },
+  "engines": { "node": ">=18" }
+}
