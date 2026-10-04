@@ -2,9 +2,28 @@
 import crypto from "node:crypto";
 
 /* ---------------- storage: Upstash Redis REST, or in-memory for local dev ---------------- */
+// Works with: Upstash REST (KV_REST_API_URL + KV_REST_API_TOKEN), any Redis via REDIS_URL (Vercel "Redis" / Redis Cloud), or in-memory for local dev.
 const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-export const hasDb = !!(URL_ && TOKEN);
+const REDIS_URL = process.env.REDIS_URL || process.env.KV_URL || "";
+const useRest = !!(URL_ && TOKEN), useTcp = !useRest && !!REDIS_URL;
+export const hasDb = useRest || useTcp;
+const DB_SECRET = TOKEN || REDIS_URL;
+
+async function tcp() {
+  const g = globalThis;
+  if (g.__siradaRedis && g.__siradaRedis.isReady) return g.__siradaRedis;
+  if (!g.__siradaRedisP) {
+    g.__siradaRedisP = (async () => {
+      const { createClient } = await import("redis");
+      const c = createClient({ url: REDIS_URL, socket: { connectTimeout: 8000, reconnectStrategy: (n) => Math.min(n * 200, 2000) } });
+      c.on("error", (e) => console.error("redis", e.message));
+      await c.connect();
+      g.__siradaRedis = c; return c;
+    })().catch((e) => { g.__siradaRedisP = null; throw e; });
+  }
+  return g.__siradaRedisP;
+}
 
 const mem = globalThis.__siradaMem || (globalThis.__siradaMem = { kv: new Map(), exp: new Map() });
 function memAlive(k) { const e = mem.exp.get(k); if (e && e < Date.now()) { mem.kv.delete(k); mem.exp.delete(k); } return mem.kv.has(k); }
@@ -31,6 +50,11 @@ async function memCmd(c) {
 }
 export async function redis(...cmd) {
   if (!hasDb) return memCmd(cmd);
+  if (useTcp) {
+    const c = await tcp();
+    const r = await c.sendCommand(cmd.map(String));
+    return Buffer.isBuffer(r) ? r.toString() : r;
+  }
   const r = await fetch(URL_, { method: "POST", headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" }, body: JSON.stringify(cmd.map(String)) });
   const j = await r.json();
   if (j.error) throw new Error("redis: " + j.error);
@@ -153,7 +177,7 @@ export const customerView = (bk, c) => ({ id: bk.id, date: bk.date, time: bk.tim
   barberName: (c.barbers.find(b => b.id === bk.barberId) || {}).name || "Usta", name: bk.name, note: bk.note, status: bk.status, cancelledBy: bk.cancelledBy || null });
 
 /* ---------------- auth: scrypt passwords + HMAC session cookie ---------------- */
-const SECRET = process.env.SESSION_SECRET || (TOKEN ? sha("sirada-session:" + TOKEN) : "dev-only-secret");
+const SECRET = process.env.SESSION_SECRET || (DB_SECRET ? sha("sirada-session:" + DB_SECRET) : "dev-only-secret");
 export function hashPass(pw, salt = rid(12)) { return { salt, hash: crypto.scryptSync(String(pw), salt, 32).toString("base64url") }; }
 export function checkPass(pw, u) { const h = crypto.scryptSync(String(pw), u.salt, 32); const t = Buffer.from(u.hash, "base64url"); return t.length === h.length && crypto.timingSafeEqual(h, t); }
 function sign(p) { const d = Buffer.from(JSON.stringify(p)).toString("base64url"); return d + "." + crypto.createHmac("sha256", SECRET).update(d).digest("base64url"); }

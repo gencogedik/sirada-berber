@@ -10,8 +10,8 @@
 ## Vercel'e kurulum (5 dakika)
 
 1. [vercel.com/new](https://vercel.com/new) → **Import Git Repository** → bu repoyu seç → **Deploy**.
-2. Proje sayfasında **Storage** → **Create Database** → **Upstash for Redis** (ücretsiz plan) → projeye bağla.
-   Bu adım `KV_REST_API_URL` ve `KV_REST_API_TOKEN` değişkenlerini kendiliğinden ekler.
+2. Proje sayfasında **Storage** → **Create Database** → **Redis** ya da **Upstash for Redis** (ücretsiz plan) → projeye bağla.
+   İkisi de çalışır: Redis `REDIS_URL`, Upstash `KV_REST_API_URL` + `KV_REST_API_TOKEN` değişkenini kendiliğinden ekler.
 3. **Deployments** → son dağıtımda **⋯ → Redeploy** (değişkenlerin devreye girmesi için).
 4. `https://<proje>.vercel.app/usta` adresini aç ve **Dükkânını kur** formunu doldur. İlk hesap sahip hesabıdır.
 5. **Ekip** bölümünden ustaları ekle, kullanıcı adı ve şifrelerini onlara ilet.

@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "description": "Sırada — berberler için online randevu: müşteri sayfası ve usta paneli",
-  "scripts": { "dev": "node dev.mjs" },
-  "engines": { "node": ">=18" }
+  "scripts": {
+    "dev": "node dev.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "redis": "^5.8.2"
+  }
 }
