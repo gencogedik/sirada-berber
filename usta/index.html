@@ -180,6 +180,7 @@ function dshort(d) { const n = nowTR().date; return d === n ? "Bugün" : d === a
 function vAgenda() {
   const n = nowTR(); if (!date) date = n.date;
   if (!owner()) filter = me.barberId || "all";
+  else if (barbers().length === 1) filter = barbers()[0].id;
   else if (filter !== "all" && !barbers().some(b => b.id === filter)) filter = "all";
   const fb = (x) => filter === "all" || x.barberId === filter;
   const day = A.bookings.filter(b => b.date === date && fb(b)).sort((a, b) => a.time.localeCompare(b.time));
