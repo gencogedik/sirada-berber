@@ -178,18 +178,19 @@ export const OPEN = new Set(["talep", "onayli"]);
 export function validPhone(p) { let d = String(p || "").replace(/\D/g, ""); if (d.startsWith("90") && d.length === 12) d = "0" + d.slice(2); if (d.length === 10 && d[0] === "5") d = "0" + d; return /^05\d{9}$/.test(d) ? d : null; }
 const endTs = (b) => startTs(b.date, b.time) + b.dur * 60e3;
 export const isOpen = (b) => OPEN.has(b.status) && endTs(b) > Date.now();
-const actKey = (shop, phone) => `act:${shop}:${phone}`;
-export async function claimPhone(shop, phone, id) {
+// One open booking per customer phone *per barber*: each usta keeps their own queue.
+const actKey = (shop, barberId, phone) => `act:${shop}:${barberId}:${phone}`;
+export async function claimPhone(shop, barberId, phone, id) {
   for (let i = 0; i < 2; i++) {
-    if ((await redis("SET", actKey(shop, phone), id, "NX")) === "OK") return true;
-    const cur = await redis("GET", actKey(shop, phone));
+    if ((await redis("SET", actKey(shop, barberId, phone), id, "NX")) === "OK") return true;
+    const cur = await redis("GET", actKey(shop, barberId, phone));
     const b = cur ? await hgetJSON(K(shop, "bk"), cur) : null;
     if (b && isOpen(b)) return false;
-    await redis("DEL", actKey(shop, phone));
+    await redis("DEL", actKey(shop, barberId, phone));
   }
   return false;
 }
-export async function releasePhone(shop, b) { const cur = await redis("GET", actKey(shop, b.phone)); if (cur === b.id) await redis("DEL", actKey(shop, b.phone)); }
+export async function releasePhone(shop, b) { const k = actKey(shop, b.barberId, b.phone); const cur = await redis("GET", k); if (cur === b.id) await redis("DEL", k); }
 
 export async function createBooking(shop, c, { serviceId, barberId, date, time, name, phone, note }, meta) {
   const s = c.services.find(x => x.id === serviceId);
@@ -209,10 +210,14 @@ export async function createBooking(shop, c, { serviceId, barberId, date, time, 
   const cands = order.filter(b => !slotOk(c, b, date, m, s.dur));
   if (!cands.length) return { error: slotOk(c, order[0], date, m, s.dur) || "Bu saat uygun değil." };
   const id = rid(9);
-  if (!(await claimPhone(shop, ph, id))) return { error: "Bu telefon numarasıyla zaten açık bir randevu var. Yeni randevu için önce onu iptal et.", code: "open" };
-  let chosen = null;
-  for (const b of cands) { if (await lockRange(shop, date, b.id, m, s.dur, id)) { chosen = b; break; } }
-  if (!chosen) { await redis("DEL", actKey(shop, ph)); return { error: "Bu saat az önce doldu. Başka bir saat seç.", code: "taken" }; }
+  let chosen = null, blockedByOpen = 0;
+  for (const b of cands) {
+    if (!(await claimPhone(shop, b.id, ph, id))) { blockedByOpen++; continue; }
+    if (await lockRange(shop, date, b.id, m, s.dur, id)) { chosen = b; break; }
+    await redis("DEL", actKey(shop, b.id, ph));
+  }
+  if (!chosen && blockedByOpen === cands.length) return { error: cands.length === 1 ? `${cands[0].name} ile zaten açık bir randevun var. Yeni randevu için önce onu iptal et.` : "Bu ustalarla zaten açık randevun var. Yeni randevu için önce onu iptal et.", code: "open" };
+  if (!chosen) return { error: "Bu saat az önce doldu. Başka bir saat seç.", code: "taken" };
   const key = rid(16);
   const bk = { id, date, time: fmt(m), dur: s.dur, serviceId: s.id, serviceName: s.name, price: Number(s.price) || 0, barberId: chosen.id,
     name: nm, phone: ph, note: clip(note, 240), staffNote: "", status: meta.source === "online" ? "talep" : "onayli", source: meta.source, by: meta.by || null,
@@ -245,14 +250,14 @@ const secure = () => (process.env.VERCEL ? "; Secure" : "");
 const cookie = (name, val, age) => `${name}=${val}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${age}${secure()}`;
 const readCookie = (req, name) => { const m = new RegExp("(?:^|;\\s*)" + name + "=([^;]+)").exec(req.headers.cookie || ""); return m ? decodeURIComponent(m[1]) : null; };
 // shop staff session
-export const sessionCookie = (shop, u) => cookie("ss", sign({ s: shop, u: u.username, v: u.ver || 1, exp: Date.now() + 30 * 864e5 }), 30 * 86400);
+export const sessionCookie = (shop, u, imp) => cookie("ss", sign({ s: shop, u: u.username, v: u.ver || 1, ...(imp ? { imp } : {}), exp: Date.now() + (imp ? 8 * 3600e3 : 30 * 864e5) }), imp ? 8 * 3600 : 30 * 86400);
 export const clearCookie = () => cookie("ss", "", 0);
 export async function currentUser(req) {
   const p = unsign(readCookie(req, "ss")); if (!p || !p.s) return null;
   const shop = await shopById(p.s); if (!shop || shop.disabled) return null;
   const u = await hgetJSON(K(p.s, "users"), p.u);
   if (!u || (u.ver || 1) !== p.v || u.disabled) return null;
-  return { ...u, shop: p.s, shopObj: shop };
+  return { ...u, shop: p.s, shopObj: shop, imp: p.imp || null };
 }
 // platform admin session
 export const adminCookie = (a) => cookie("ps", sign({ a: a.username, v: a.ver || 1, exp: Date.now() + 14 * 864e5 }), 14 * 86400);
@@ -262,7 +267,7 @@ export async function currentAdmin(req) {
   const a = await hgetJSON("padmins", p.a);
   return a && (a.ver || 1) === p.v ? a : null;
 }
-export const userView = (u) => ({ username: u.username, name: u.name, role: u.role, barberId: u.barberId || null });
+export const userView = (u) => ({ username: u.username, name: u.name, role: u.role, barberId: u.barberId || null, ...(u.imp ? { imp: u.imp } : {}) });
 export const normUser = (s) => String(s || "").trim().toLocaleLowerCase("tr-TR").replace(/ı/g, "i").replace(/[^a-z0-9._-]/g, "");
 export function genPass() { const a = "abcdefghjkmnpqrstuvwxyz23456789"; return Array.from(crypto.randomBytes(10), x => a[x % a.length]).join(""); }
 
@@ -281,9 +286,19 @@ export async function migrateLegacy() {
   for (const [k, b] of Object.entries(await hallJSON("bk"))) {
     if (b.status === "bekliyor") b.status = "onayli";
     await hsetJSON(K(id, "bk"), k, b);
-    if (OPEN.has(b.status)) { await lockRange(id, b.date, b.barberId, toMin(b.time), b.dur, b.id); await redis("SET", actKey(id, b.phone), b.id, "NX"); }
+    if (OPEN.has(b.status)) { await lockRange(id, b.date, b.barberId, toMin(b.time), b.dur, b.id); await redis("SET", actKey(id, b.barberId, b.phone), b.id, "NX"); }
   }
   for (const [k, b] of Object.entries(await hallJSON("bl"))) { const nb = { ...b, id: k }; await hsetJSON(K(id, "bl"), k, nb); await lockRange(id, b.date, b.barberId, toMin(b.time), b.dur, "blk" + k); }
   await redis("SET", "migrated", "1");
   return shop;
+}
+
+/* ================= permanent removal of a shop and everything in it ================= */
+export async function purgeShop(shop) {
+  const bk = await hallJSON(K(shop.id, "bk")), bl = await hallJSON(K(shop.id, "bl"));
+  for (const b of Object.values(bk)) { if (OPEN.has(b.status)) await unlockRange(shop.id, b.date, b.barberId, toMin(b.time), b.dur, b.id); await redis("DEL", actKey(shop.id, b.barberId, b.phone)); }
+  for (const b of Object.values(bl)) await unlockRange(shop.id, b.date, b.barberId, toMin(b.time), b.dur, "blk" + b.id);
+  await redis("DEL", K(shop.id, "cfg"), K(shop.id, "users"), K(shop.id, "bk"), K(shop.id, "bl"));
+  if (shop.slug) { const cur = await redis("HGET", "slugs", shop.slug); if (cur === shop.id) await redis("HDEL", "slugs", shop.slug); }
+  await redis("HDEL", "shops", shop.id);
 }

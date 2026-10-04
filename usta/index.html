@@ -168,7 +168,7 @@ function render(force) {
   pending = false;
   const c = A ? A.cfg : null, pc = A ? A.pending.length : 0;
   document.title = (pc ? `(${pc}) ` : "") + (c ? c.shopName + " · " : "") + "Usta paneli";
-  $("root").innerHTML = `<header class="top"><div class="shop"><b>${esc(c ? c.shopName : "")}</b><span class="lbl">${owner() ? "Dükkân sahibi" : "Usta paneli"}</span></div>
+  $("root").innerHTML = `${me.imp ? `<div class="note" style="margin-top:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;background:var(--ink);color:var(--paper)"><span><b style="color:var(--band)">Yönetici modu.</b> Bu dükkâna ${esc(me.imp)} olarak, sahip yetkisiyle girdin.</span><span class="acts" style="flex:none"><a class="btn y sm" href="/yonetim">Yönetime dön</a><button class="btn sm" style="background:var(--paper);color:var(--ink)" data-act="logout">Dükkândan çık</button></span></div>` : ""}<header class="top"><div class="shop"><b>${esc(c ? c.shopName : "")}</b><span class="lbl">${owner() ? "Dükkân sahibi" : "Usta paneli"}</span></div>
     <button class="me" data-act="go" data-v="hesap" aria-label="Hesabım"><span class="av">${esc(ini(me.name))}</span><span>${esc(me.name)}</span></button></header>
     <nav class="tabs" aria-label="Menü">${pages().map(([k, l]) => `<button data-act="go" data-v="${k}" ${page === k ? 'aria-current="page"' : ""}>${ICON[k]}<span>${l}</span>${k === "ajanda" && pc ? `<span class="badge">${pc}</span>` : ""}</button>`).join("")}</nav>
     <main id="main">${!A ? `<p class="soft" style="padding-top:24px">Yükleniyor…</p>` : page === "ajanda" ? vAgenda() : page === "musteri" ? vCust() : page === "ustalar" ? vTeam() : page === "ayar" ? vSettings() : page === "saatler" ? vHours(me.barberId, true) : vAccount()}</main>`;
@@ -357,7 +357,9 @@ function readHours(prefix, barberId) {
 function vHours(barberId, standalone, list) {
   const b = (list || A.cfg.barbers).find(x => x.id === barberId);
   if (!b) return `<div class="empty" style="margin-top:24px">Bu hesaba bağlı bir koltuk yok.</div>`;
+  const blink = location.origin + "/" + shopSlug + "?u=" + encodeURIComponent(b.id);
   return `${standalone ? `<div class="ph"><div><span class="lbl">Müşteriler bu saatlere göre yer seçer</span><h1>Saatlerim</h1></div></div>` : ""}
+    <div class="linkbox" style="max-width:560px"><span class="soft small">${standalone ? "Kendi randevu bağlantın" : esc(b.name) + " için randevu bağlantısı"}</span><span class="mono">${esc(blink)}</span><button type="button" class="btn light sm" data-act="copy" data-v="${esc(blink)}">Kopyala</button></div>
     <form class="sec" id="hf-${b.id}" data-hf="${b.id}" novalidate style="max-width:560px;${standalone ? "" : "padding-top:0"}">${hoursForm(b, "h" + b.id + "_")}
       <div><button class="btn" type="submit">Saatleri kaydet</button></div></form>`;
 }

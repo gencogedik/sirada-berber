@@ -113,7 +113,7 @@ export default handle(async (req, res) => {
   if (a === "status") {
     if (!["geldi", "gelmedi", "onayli"].includes(b.status)) return fail(res, 400, "Geçersiz durum.");
     if (!["onayli", "geldi", "gelmedi"].includes(bk.status)) return fail(res, 400, "Önce randevuyu onayla ya da geri al.");
-    if (b.status === "onayli") { if (!(await claimPhone(S, bk.phone, bk.id))) return fail(res, 409, "Bu müşterinin başka açık randevusu var."); bk.status = "onayli"; return save(); }
+    if (b.status === "onayli") { if (!(await claimPhone(S, bk.barberId, bk.phone, bk.id))) return fail(res, 409, "Bu müşterinin bu ustada başka açık randevusu var."); bk.status = "onayli"; return save(); }
     await closeBooking(S, bk, b.status, "dukkan:" + u.username); return send(res, 200, { booking: clean(bk) });
   }
   if (a === "note") { bk.staffNote = clip(b.staffNote, 300); return save(); }
@@ -121,7 +121,7 @@ export default handle(async (req, res) => {
   if (a === "restore") {
     if (!["iptal", "red"].includes(bk.status)) return send(res, 200, { booking: clean(bk) });
     if (startTs(bk.date, bk.time) < Date.now()) return fail(res, 400, "Geçmiş bir randevu geri alınamaz.");
-    if (!(await claimPhone(S, bk.phone, bk.id))) return fail(res, 409, "Bu müşterinin başka açık randevusu var.");
+    if (!(await claimPhone(S, bk.barberId, bk.phone, bk.id))) return fail(res, 409, "Bu müşterinin bu ustada başka açık randevusu var.");
     if (!(await lockRange(S, bk.date, bk.barberId, toMin(bk.time), bk.dur, bk.id))) { await releasePhone(S, bk); return fail(res, 409, "Bu saat artık dolu; önce saati değiştir."); }
     bk.status = "onayli"; bk.closedBy = null; return save();
   }
@@ -133,7 +133,9 @@ export default handle(async (req, res) => {
     const err = slotOk(c, barber, date, m, bk.dur); if (err) return fail(res, 400, err);
     const nw = trNow(); if (date < nw.date || (date === nw.date && m < nw.min)) return fail(res, 400, "Geçmiş bir saate taşınamaz.");
     if (date === bk.date && fmt(m) === bk.time && barberId === bk.barberId) return send(res, 200, { booking: clean(bk) });
-    if (!(await lockRange(S, date, barberId, m, bk.dur, bk.id))) return fail(res, 409, "Bu saat dolu.");
+    if (barberId !== bk.barberId && !(await claimPhone(S, barberId, bk.phone, bk.id))) return fail(res, 409, "Bu müşterinin o ustada zaten açık randevusu var.");
+    if (!(await lockRange(S, date, barberId, m, bk.dur, bk.id))) { if (barberId !== bk.barberId) await releasePhone(S, { ...bk, barberId }); return fail(res, 409, "Bu saat dolu."); }
+    if (barberId !== bk.barberId) await releasePhone(S, bk);
     const keep = new Set(); if (date === bk.date && barberId === bk.barberId) for (let x = m; x < m + bk.dur; x += UNIT) keep.add(x);
     for (let x = toMin(bk.time); x < toMin(bk.time) + bk.dur; x += UNIT) if (!keep.has(x)) await unlockRange(S, bk.date, bk.barberId, x, UNIT, bk.id);
     bk.history = [...(bk.history || []), { from: `${bk.date} ${bk.time}`, to: `${date} ${fmt(m)}`, by: u.username, at: Date.now() }];

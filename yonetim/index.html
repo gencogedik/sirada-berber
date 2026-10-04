@@ -37,6 +37,11 @@ tr.off td { color: var(--soft) }
 .mini { display: flex; gap: 6px; flex-wrap: wrap }
 .inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: end }
 .inline .fld { flex: 1 1 140px }
+.det { border-radius: 16px; background: var(--card); padding: 18px; display: grid; gap: 16px; margin-bottom: 18px; box-shadow: inset 0 0 0 1.5px var(--ink) }
+.det h2 { font-size: 1.8rem }
+.urow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; padding: 12px 0; border-top: 1px solid var(--hair) }
+.urow .meta { grid-column: 1 / -1; font-size: .85rem; color: var(--soft) }
+@media (max-width: 640px) { .urow { grid-template-columns: 1fr } }
 </style>
 </head>
 <body>
@@ -55,7 +60,7 @@ async function call(action, data) {
 }
 const MARK = '<svg width="24" height="24" viewBox="0 0 26 26"><g fill="none" stroke="#f6d24a" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="7" r="3.3"/><circle cx="6" cy="19" r="3.3"/><path d="M9 8.6 23 17M9 17.4 23 9"/></g></svg>';
 const day = (ts) => ts ? new Date(ts).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }) : "—";
-let admin = null, needsSetup = false, shops = null, made = null, reset = null, editSlug = null;
+let admin = null, needsSetup = false, shops = null, made = null, reset = null, editSlug = null, detail = null, D = null, delAsk = false;
 
 function renderAuth(err) {
   $("root").innerHTML = needsSetup
@@ -86,19 +91,47 @@ function render() {
     <p style="margin:0;font-family:var(--sans);font-size:.9rem">Şifreler sadece şimdi görünür; kaydedilmez. Kopyala ya da indir, sonra sattığın berbere ilet.</p>
     <div class="tbl" style="border-color:var(--on-band)"><table><thead><tr><th>Müşteri bağlantısı</th><th>Dükkân kodu</th><th>Kullanıcı adı</th><th>Şifre</th></tr></thead><tbody>
       ${made.map(m => `<tr><td>${esc(origin + "/" + m.slug)}</td><td>${esc(m.slug)}</td><td>${esc(m.username)}</td><td style="user-select:all">${esc(m.password)}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
-  ${reset ? `<div class="creds"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><b>Yeni sahip şifresi · ${esc(reset.slug)}</b><button class="btn sm" data-act="hideReset">Kapat</button></div>
+  ${reset ? `<div class="creds"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><b>Yeni şifre · ${esc(reset.slug)}</b><button class="btn sm" data-act="hideReset">Kapat</button></div>
     <div style="font-family:var(--mono)">Dükkân kodu: ${esc(reset.slug)}<br>Kullanıcı adı: ${esc(reset.username)}<br>Şifre: <span style="user-select:all">${esc(reset.password)}</span></div>
     <span class="mini"><button class="btn sm" data-act="copyReset">Kopyala</button></span></div>` : ""}
+  ${detail ? detailHtml() : ""}
   <div class="kpis"><div><span class="lbl">Dükkân</span><b>${list.length}</b></div><div><span class="lbl">Kullanımda</span><b>${sold}</b></div><div><span class="lbl">Açık randevu</span><b>${list.reduce((s, x) => s + x.open, 0)}</b></div><div><span class="lbl">Toplam randevu</span><b>${list.reduce((s, x) => s + x.bookings, 0)}</b></div></div>
   <div class="tbl"><table><thead><tr><th>Dükkân</th><th>Bağlantı</th><th>Sahip girişi</th><th class="n">Usta</th><th class="n">Randevu</th><th>Son randevu</th><th>Not</th><th></th></tr></thead><tbody>
     ${list.map(s => `<tr class="${s.disabled ? "off" : ""}"><td><b>${esc(s.name)}</b>${s.disabled ? ' <span class="tag iptal">Kapalı</span>' : s.barbers ? "" : ' <span class="tag mut">Kurulmadı</span>'}<div class="soft small">${day(s.createdAt)}</div></td>
       <td>${editSlug === s.id ? `<form class="inline" data-slug="${s.id}" novalidate><input id="sl-${s.id}" value="${esc(s.slug)}" style="min-width:140px"><button class="btn sm" type="submit">Kaydet</button></form>` : `<a class="link mono" href="/${esc(s.slug)}" target="_blank" rel="noopener">/${esc(s.slug)}</a> <button class="link small soft" data-act="editSlug" data-id="${s.id}">değiştir</button>`}</td>
       <td class="mono small">${esc(s.owner || "—")}</td><td class="n">${s.barbers}</td><td class="n">${s.bookings}${s.open ? ` <span class="soft">(${s.open} açık)</span>` : ""}</td><td>${day(s.last)}</td>
       <td><input aria-label="Not" data-note="${s.id}" value="${esc(s.note)}" placeholder="Örn. Ahmet Bey, Kadıköy" style="min-width:160px;padding:7px 9px;font-size:.88rem"></td>
-      <td><div class="mini"><button class="btn light sm" data-act="reset" data-id="${s.id}" data-slug="${esc(s.slug)}">Sahip şifresini yenile</button><button class="btn light sm" data-act="toggle" data-id="${s.id}" data-d="${s.disabled ? 0 : 1}">${s.disabled ? "Aç" : "Kapat"}</button></div></td></tr>`).join("")
+      <td><div class="mini"><button class="btn sm" data-act="manage" data-id="${s.id}">Yönet</button><button class="btn light sm" data-act="reset" data-id="${s.id}" data-slug="${esc(s.slug)}">Sahip şifresini yenile</button><button class="btn light sm" data-act="toggle" data-id="${s.id}" data-d="${s.disabled ? 0 : 1}">${s.disabled ? "Aç" : "Kapat"}</button></div></td></tr>`).join("")
       || `<tr><td colspan="8" class="soft">Henüz dükkân yok. Yukarıdan hesap oluştur.</td></tr>`}</tbody></table></div>
+  <div class="det" style="margin-top:28px;box-shadow:inset 0 0 0 1.5px var(--bad)"><h2 style="font-size:1.4rem">Tüm dükkânları sil</h2>
+    <p class="soft small" style="margin:0">Bütün dükkânlar, giriş hesapları, ustalar, randevular ve müşteri kayıtları kalıcı olarak silinir; geri alınamaz. Yönetici hesabın kalır.</p>
+    <form class="inline" id="wipeF" novalidate><label class="fld" for="wipeC"><span>Onay için <b>HEPSİNİ SİL</b> yaz</span><input id="wipeC" autocomplete="off"></label><button class="btn danger" type="submit">Tümünü kalıcı olarak sil</button></form></div>
   <p class="soft small">Berber kendi panelinden dükkân adını, saatlerini, hizmetlerini ve ustalarını ayarlar. Kapatılan dükkânın müşteri sayfası ve girişi çalışmaz; veriler silinmez.</p>`;
 }
+function detailHtml() {
+  if (!D) return `<div class="det"><p class="soft" style="margin:0">Yükleniyor…</p></div>`;
+  const sh = D.shop;
+  return `<div class="det"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:start">
+      <div><span class="lbl">Dükkân yönetimi · /${esc(sh.slug)}</span><h2>${esc(sh.name)}</h2></div>
+      <span class="mini"><button class="btn" data-act="enter" data-id="${sh.id}">Dükkân paneline gir</button><button class="btn light" data-act="closeDetail">Kapat</button></span></div>
+    <p class="soft small" style="margin:0">“Dükkân paneline gir” seni bu dükkânın usta paneline sahip yetkisiyle sokar: ayarlar, ustalar, randevular ve müşteriler dahil her şeyi değiştirebilirsin. Oturum 8 saat sürer.</p>
+    <div class="inline"><label class="fld" for="dName"><span>Dükkân adı</span><input id="dName" maxlength="40" value="${esc(sh.name)}"></label><button class="btn light sm" data-act="saveName">Adı kaydet</button>
+      <label class="fld" for="dSlug"><span>Bağlantı adı</span><input id="dSlug" maxlength="30" value="${esc(sh.slug)}" autocapitalize="none"></label><button class="btn light sm" data-act="saveSlug">Bağlantıyı kaydet</button></div>
+    <div><span class="lbl">Giriş hesapları (${D.users.length})</span>
+      ${D.users.map(u => `<div class="urow" data-u="${esc(u.username)}">
+        <label class="fld"><span>Kullanıcı adı</span><input value="${esc(u.username)}" data-f="un" autocapitalize="none"></label>
+        <label class="fld"><span>Görünen ad</span><input value="${esc(u.name)}" data-f="nm" maxlength="40"></label>
+        <span class="mini"><button class="btn sm" data-act="uSave">Kaydet</button><button class="btn light sm" data-act="uPass">Yeni şifre</button><button class="btn light sm" data-act="uToggle" data-d="${u.disabled ? 0 : 1}">${u.disabled ? "Aç" : "Kapat"}</button><button class="btn danger sm" data-act="uDel">Sil</button></span>
+        <span class="meta">${u.role === "sahip" ? "Dükkân sahibi" : "Usta"}${u.chair ? " · koltuk: " + esc(u.chair) : ""}${u.disabled ? " · <b style='color:var(--bad)'>giriş kapalı</b>" : ""}</span></div>`).join("")}
+    </div>
+    <form class="inline" id="uaF" novalidate style="border-top:1px solid var(--hair);padding-top:14px"><label class="fld" for="uaU"><span>Yeni hesap · kullanıcı adı</span><input id="uaU" autocapitalize="none"></label>
+      <label class="fld" for="uaN"><span>Ad</span><input id="uaN" maxlength="40"></label>
+      <label class="fld" for="uaR"><span>Rol</span><select id="uaR"><option value="sahip">Dükkân sahibi</option><option value="usta">Usta</option></select></label><button class="btn light sm" type="submit">Hesap ekle</button></form>
+    <div style="border-top:1px solid var(--hair);padding-top:14px">${delAsk ? `<form class="inline" id="delF" novalidate><label class="fld" for="delC"><span>Silmek için dükkân kodunu yaz: <b>${esc(sh.slug)}</b></span><input id="delC" autocapitalize="none"></label><button class="btn light sm" type="button" data-act="delNo">Vazgeç</button><button class="btn danger sm" type="submit">Dükkânı sil</button></form>`
+      : `<button class="btn danger sm" data-act="delAsk">Dükkânı sil</button> <span class="soft small">Bağlantısı ve girişleri çalışmaz hale gelir.</span>`}</div>
+  </div>`;
+}
+async function openDetail(id) { detail = id; D = null; delAsk = false; render(); try { D = await call("shop&id=" + encodeURIComponent(id)); } catch (e) { toast(e.message); detail = null; } render(); window.scrollTo(0, 0); }
 const credText = (rows) => rows.map(m => `Bağlantı: ${location.origin}/${m.slug}\nUsta girişi: ${location.origin}/usta\nDükkân kodu: ${m.slug}\nKullanıcı adı: ${m.username}\nŞifre: ${m.password}`).join("\n\n");
 async function copy(t) { try { await navigator.clipboard.writeText(t); toast("Kopyalandı"); } catch { prompt("Kopyala:", t); } }
 document.addEventListener("click", async (e) => {
@@ -113,12 +146,27 @@ document.addEventListener("click", async (e) => {
     case "copyReset": copy(credText([reset])); break;
     case "editSlug": editSlug = id; render(); break;
     case "reset": if (el.dataset.sure) { try { const r = await call("resetOwner", { id }); reset = { ...r, slug: el.dataset.slug }; render(); window.scrollTo(0, 0); } catch (x) { toast(x.message); } } else { el.dataset.sure = "1"; el.textContent = "Eski şifre geçersiz olacak · Onayla"; } break;
+    case "manage": openDetail(id); break;
+    case "closeDetail": detail = null; D = null; render(); break;
+    case "enter": try { const r = await call("enter", { id }); window.open("/usta", "_blank") || (location.href = "/usta"); toast("Dükkân paneli açıldı"); } catch (x) { toast(x.message); } break;
+    case "saveName": try { await call("rename", { id: D.shop.id, name: $("dName").value }); toast("Dükkân adı değişti"); await load(); openDetail(D.shop.id); } catch (x) { toast(x.message); } break;
+    case "saveSlug": try { await call("slug", { id: D.shop.id, slug: $("dSlug").value }); toast("Bağlantı değişti"); await load(); openDetail(D.shop.id); } catch (x) { toast(x.message); } break;
+    case "uSave": { const row = el.closest(".urow"), old = row.dataset.u, un = row.querySelector("[data-f=un]").value.trim(), nm = row.querySelector("[data-f=nm]").value;
+      try { const cur = D.users.find(u => u.username === old); if (nm !== cur.name) await call("userName", { id: D.shop.id, username: old, name: nm }); if (un && un !== old) await call("userRename", { id: D.shop.id, username: old, newUsername: un }); toast("Hesap kaydedildi"); await load(); openDetail(D.shop.id); } catch (x) { toast(x.message); } break; }
+    case "uPass": { const u = el.closest(".urow").dataset.u; try { const r = await call("userPass", { id: D.shop.id, username: u }); reset = { username: r.username, password: r.password, slug: D.shop.slug }; render(); window.scrollTo(0, 0); } catch (x) { toast(x.message); } break; }
+    case "uToggle": { const u = el.closest(".urow").dataset.u; try { await call("userToggle", { id: D.shop.id, username: u, disabled: el.dataset.d === "1" }); toast("Güncellendi"); openDetail(D.shop.id); } catch (x) { toast(x.message); } break; }
+    case "uDel": { if (!el.dataset.sure) { el.dataset.sure = "1"; el.textContent = "Emin misin?"; break; } const u = el.closest(".urow").dataset.u; try { await call("userDelete", { id: D.shop.id, username: u }); toast("Hesap silindi"); openDetail(D.shop.id); } catch (x) { toast(x.message); } break; }
+    case "delAsk": delAsk = true; render(); break;
+    case "delNo": delAsk = false; render(); break;
     case "toggle": try { await call("toggle", { id, disabled: el.dataset.d === "1" }); await load(); toast("Güncellendi"); } catch (x) { toast(x.message); } break;
   }
 });
 document.addEventListener("submit", async (e) => {
   const f = e.target; e.preventDefault();
   if (f.id === "cf") { try { made = (await call("create", { count: +$("cn").value, prefix: $("cp").value })).made; await load(); window.scrollTo(0, 0); } catch (x) { toast(x.message); } }
+  if (f.id === "wipeF") { try { const r = await call("deleteAll", { confirm: $("wipeC").value.trim() }); made = null; reset = null; detail = null; D = null; toast(r.deleted + " dükkân silindi"); await load(); } catch (x) { toast(x.message); } }
+  if (f.id === "uaF") { try { const r = await call("userAdd", { id: D.shop.id, username: $("uaU").value, name: $("uaN").value, role: $("uaR").value }); reset = { username: r.username, password: r.password, slug: D.shop.slug }; await openDetail(D.shop.id); } catch (x) { toast(x.message); } }
+  if (f.id === "delF") { try { await call("deleteShop", { id: D.shop.id, confirm: $("delC").value.trim() }); toast("Dükkân silindi"); detail = null; D = null; await load(); } catch (x) { toast(x.message); } }
   if (f.dataset.slug) { const id = f.dataset.slug; try { await call("slug", { id, slug: $("sl-" + id).value }); editSlug = null; await load(); toast("Bağlantı değişti"); } catch (x) { toast(x.message); } }
 });
 document.addEventListener("change", async (e) => { const t = e.target; if (t.dataset.note) { try { await call("note", { id: t.dataset.note, note: t.value }); toast("Not kaydedildi"); } catch (x) { toast(x.message); } } });

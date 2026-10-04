@@ -1,6 +1,7 @@
 // Platform admin (the person who sells Sırada to barbershops): create shop accounts, reset owner passwords, open/close shops.
 import { send, fail, body, query, ip, rateLimit, handle, redis, hallJSON, hgetJSON, hsetJSON, getCfg, saveCfg, hashPass, checkPass,
-  adminCookie, clearAdminCookie, currentAdmin, normUser, rid, genPass, K, DEFAULT_CFG, setSlug, validSlug, migrateLegacy, hasDb, OPEN } from "./_lib.js";
+  adminCookie, clearAdminCookie, currentAdmin, normUser, rid, genPass, K, DEFAULT_CFG, setSlug, validSlug, migrateLegacy, hasDb, OPEN,
+  clip, sessionCookie, userView, purgeShop } from "./_lib.js";
 
 export default handle(async (req, res) => {
   const a = query(req).action;
@@ -45,6 +46,13 @@ export default handle(async (req, res) => {
     out.sort((x, y) => x.createdAt - y.createdAt);
     return send(res, 200, { shops: out });
   }
+  if (req.method === "GET" && a === "shop") {   // one shop's accounts, for the admin's detail view
+    const s = await hgetJSON("shops", String(query(req).id || "")); if (!s) return fail(res, 404, "Dükkân bulunamadı.");
+    const [users, c] = await Promise.all([hallJSON(K(s.id, "users")), getCfg(s.id)]);
+    const chair = (id) => (c.barbers.find(x => x.id === id) || {}).name || null;
+    return send(res, 200, { shop: { id: s.id, slug: s.slug, name: c.shopName, disabled: !!s.disabled, note: s.note || "" },
+      users: Object.values(users).map(x => ({ ...userView(x), disabled: !!x.disabled, chair: chair(x.barberId) })).sort((x, y) => (x.role === "sahip" ? -1 : 0) - (y.role === "sahip" ? -1 : 0)) });
+  }
   if (req.method !== "POST") return fail(res, 404, "Bilinmeyen istek.");
   const b = body(req);
 
@@ -66,6 +74,13 @@ export default handle(async (req, res) => {
     }
     return send(res, 200, { made });
   }
+  if (a === "deleteAll") {   // wipe every shop, its accounts and bookings — typed confirmation required
+    if (b.confirm !== "HEPSİNİ SİL") return fail(res, 400, "Onay için tam olarak HEPSİNİ SİL yaz.");
+    const all = Object.values(await hallJSON("shops"));
+    for (const x of all) await purgeShop(x);
+    await redis("DEL", "slugs", "cfg", "users", "bk", "bl"); await redis("SET", "migrated", "1");
+    return send(res, 200, { deleted: all.length });
+  }
   const s = await hgetJSON("shops", String(b.id || ""));
   if (!s) return fail(res, 404, "Dükkân bulunamadı.");
   if (a === "resetOwner") {
@@ -76,6 +91,71 @@ export default handle(async (req, res) => {
     Object.assign(owner, hashPass(password), { ver: (owner.ver || 1) + 1, disabled: false });
     await hsetJSON(K(s.id, "users"), owner.username, owner);
     return send(res, 200, { username: owner.username, password });
+  }
+  const UK = K(s.id, "users");
+  const getUser = async () => { const u = await hgetJSON(UK, normUser(b.username)); if (!u) { fail(res, 404, "Hesap bulunamadı."); return null; } return u; };
+  if (a === "rename") {
+    const name = clip(b.name, 40); if (!name) return fail(res, 400, "Dükkân adını yaz.");
+    const c = await getCfg(s.id); c.shopName = name; await saveCfg(s.id, c);
+    s.name = name; await hsetJSON("shops", s.id, s);
+    return send(res, 200, { ok: true });
+  }
+  if (a === "userRename") {   // change a login's username
+    const u = await getUser(); if (!u) return;
+    const nu = normUser(b.newUsername);
+    if (nu.length < 3) return fail(res, 400, "Kullanıcı adı en az 3 harf olmalı (a-z, 0-9).");
+    if (nu === u.username) return send(res, 200, { ok: true });
+    if (await hgetJSON(UK, nu)) return fail(res, 400, "Bu kullanıcı adı bu dükkânda zaten var.");
+    await redis("HDEL", UK, u.username);
+    await hsetJSON(UK, nu, { ...u, username: nu, ver: (u.ver || 1) + 1 });
+    return send(res, 200, { ok: true });
+  }
+  if (a === "userName") {
+    const u = await getUser(); if (!u) return;
+    const name = clip(b.name, 40); if (!name) return fail(res, 400, "Adı yaz.");
+    u.name = name; await hsetJSON(UK, u.username, u);
+    if (u.barberId) { const c = await getCfg(s.id); c.barbers = c.barbers.map(x => x.id === u.barberId ? { ...x, name } : x); await saveCfg(s.id, c); }
+    return send(res, 200, { ok: true });
+  }
+  if (a === "userPass") {
+    const u = await getUser(); if (!u) return;
+    const password = b.password ? String(b.password) : genPass();
+    if (password.length < 8) return fail(res, 400, "Şifre en az 8 karakter olmalı.");
+    Object.assign(u, hashPass(password), { ver: (u.ver || 1) + 1 });
+    await hsetJSON(UK, u.username, u);
+    return send(res, 200, { username: u.username, password });
+  }
+  if (a === "userToggle") {
+    const u = await getUser(); if (!u) return;
+    u.disabled = !!b.disabled; u.ver = (u.ver || 1) + 1; await hsetJSON(UK, u.username, u);
+    return send(res, 200, { ok: true });
+  }
+  if (a === "userDelete") {
+    const u = await getUser(); if (!u) return;
+    const users = Object.values(await hallJSON(UK));
+    if (u.role === "sahip" && users.filter(x => x.role === "sahip").length < 2) return fail(res, 400, "Dükkânın tek sahip hesabı silinemez; önce şifresini ya da kullanıcı adını değiştir.");
+    await redis("HDEL", UK, u.username);
+    return send(res, 200, { ok: true });
+  }
+  if (a === "userAdd") {      // add another login (owner or usta) to a shop
+    const username = normUser(b.username), name = clip(b.name, 40) || "Dükkân sahibi";
+    if (username.length < 3) return fail(res, 400, "Kullanıcı adı en az 3 harf olmalı (a-z, 0-9).");
+    if (await hgetJSON(UK, username)) return fail(res, 400, "Bu kullanıcı adı bu dükkânda zaten var.");
+    const password = b.password ? String(b.password) : genPass();
+    if (password.length < 8) return fail(res, 400, "Şifre en az 8 karakter olmalı.");
+    await hsetJSON(UK, username, { username, name, role: b.role === "usta" ? "usta" : "sahip", barberId: null, ver: 1, createdAt: Date.now(), ...hashPass(password) });
+    return send(res, 200, { username, password });
+  }
+  if (a === "enter") {        // open this shop's panel with owner rights (8-hour session, marked as admin)
+    const users = Object.values(await hallJSON(UK));
+    const owner = users.find(x => x.role === "sahip" && !x.disabled) || users.find(x => x.role === "sahip");
+    if (!owner) return fail(res, 404, "Bu dükkânın sahip hesabı yok; önce bir sahip hesabı ekle.");
+    return send(res, 200, { ok: true, slug: s.slug }, { "Set-Cookie": sessionCookie(s.id, owner, me.username) });
+  }
+  if (a === "deleteShop") {   // removes the shop from the platform; its link stops working
+    if (b.confirm !== s.slug) return fail(res, 400, "Silmek için dükkân kodunu aynen yaz.");
+    await purgeShop(s);
+    return send(res, 200, { ok: true });
   }
   if (a === "toggle") { s.disabled = !!b.disabled; await hsetJSON("shops", s.id, s); return send(res, 200, { ok: true }); }
   if (a === "slug") { const e = await setSlug(s, b.slug); if (e) return fail(res, 400, e); return send(res, 200, { slug: s.slug }); }

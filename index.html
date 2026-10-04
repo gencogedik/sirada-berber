@@ -98,7 +98,8 @@ function until(date, time) {
 const STAT = { talep: ["Onay bekliyor", ""], onayli: ["Onaylandı", "ok"], geldi: ["Tamamlandı", "ok"], gelmedi: ["Gelinmedi", "bad"], iptal: ["İptal edildi", "bad"], red: ["Onaylanmadı", "bad"] };
 
 let S = null;
-let sel = { service: null, barber: "any", date: null };
+const PRE_BARBER = new URLSearchParams(location.search).get("u");
+let sel = { service: null, barber: PRE_BARBER || "any", date: null };
 let view = "book", done = null, manage = null, sheet = null, sending = false;
 
 const today = () => S.now.date;
@@ -166,11 +167,11 @@ function render() {
   if (!sel.date || !days.includes(sel.date) || dayClosed(sel.date)) sel.date = days.find(d => !dayClosed(d) && times(d, s.dur, busy).some(x => x.ok)) || days.find(d => !dayClosed(d)) || today();
   const ts = times(sel.date, s.dur, busy), fast = earliestFor(sel.barber);
   const grp = (l, a) => a.length ? `<div class="group"><span class="lbl">${l}</span><div class="times">${a.map(x => `<button class="time" data-act="pick" data-m="${x.m}" ${x.ok ? "" : "disabled"}>${fmt(x.m)}</button>`).join("")}</div></div>` : "";
-  const c = S.cfg, open = myList().find(x => x.open);
+  const c = S.cfg, opens = myList().filter(x => x.open);
   app.innerHTML = `
   <section class="hero"><h1>Sıranı <span class="band">al.</span></h1>
     <div class="meta">${c.address ? `<span>${esc(c.address)}</span>` : ""}${c.phone ? `<span>Tel <span class="mono">${esc(c.phone)}</span></span>` : ""}<span>${esc(c.open)}–${esc(c.close)}</span></div></section>
-  ${open ? `<div class="state" style="margin-top:14px"><span class="dot"></span><span>Açık bir randevun var: <b>${esc(dayLong(open.date))} ${esc(open.time)}</b>. Yeni randevu için önce onu iptal etmelisin. <button class="link" data-act="mine">Randevularım</button></span></div>` : ""}
+  ${opens.length ? `<div class="state" style="margin-top:14px"><span class="dot"></span><span>Açık randevun var: ${opens.map(o => `<b>${esc(o.barberId && bar(o.barberId) ? bar(o.barberId).name + ", " : "")}${esc(dayLong(o.date))} ${esc(o.time)}</b>`).join(" · ")}. Aynı ustadan yeni randevu için önce onu iptal et; diğer ustalardan alabilirsin. <button class="link" data-act="mine">Randevularım</button></span></div>` : ""}
   ${fast ? `<div class="quick"><span><span class="soft small">En erken boş saat${sel.barber !== "any" ? " · " + esc(bar(sel.barber).name) : ""}</span><br><b>${dayName(fast.d)} ${fmt(fast.m)}</b></span><button class="btn y sm" data-act="fast" data-d="${fast.d}" data-m="${fast.m}">Bu saati al</button></div>` : ""}
   <section class="step"><div class="h"><h2>Hizmet</h2></div>
     <div class="chips">${c.services.map(x => `<button class="chip" data-act="svc" data-v="${x.id}" aria-pressed="${sel.service === x.id}"><b>${esc(x.name)}</b><span class="soft">${x.dur} dk · ${tl(x.price)}</span></button>`).join("")}</div></section>
@@ -203,7 +204,7 @@ function renderSheet() {
       <label class="fld" for="fp"><span>Telefon</span><input id="fp" type="tel" inputmode="tel" autocomplete="tel" value="${esc(sheet.phone ?? who.phone ?? "")}" placeholder="05xx xxx xx xx"></label>
       <label class="fld" for="fo" style="grid-column:1/-1"><span>Not <span class="soft">(isteğe bağlı)</span></span><textarea id="fo" maxlength="240" placeholder="Örn. yanlar 2 numara">${esc(sheet.note || "")}</textarea></label>
     </form>
-    <p class="soft small" style="margin:0">Talebin ustaya gider; usta onaylayınca randevun kesinleşir. Aynı anda tek açık randevun olabilir.</p>
+    <p class="soft small" style="margin:0">Talebin ustaya gider; usta onaylayınca randevun kesinleşir. Her ustada aynı anda tek açık randevun olabilir.</p>
     ${sheet.err ? `<div class="err">${esc(sheet.err)}${sheet.code === "open" && myList().length ? ` <button class="link" data-act="mine">Randevularım</button>` : ""}</div>` : ""}
     <div class="acts"><button class="btn light" data-act="close">Vazgeç</button><button class="btn" data-act="confirm" ${sending ? "disabled" : ""}>${sending ? "Gönderiliyor…" : "Talep gönder"}</button></div>
   </div></div>`;
@@ -217,7 +218,7 @@ async function confirmBook() {
   try {
     const r = await api("book", { serviceId: sel.service, barberId: sel.barber, date: sheet.d, time: fmt(sheet.m), name: sheet.name, phone: sheet.phone, note: sheet.note });
     store.set("who", { name: sheet.name.trim(), phone: sheet.phone.trim() });
-    const mine = myList().filter(x => x.id !== r.booking.id); mine.unshift({ id: r.booking.id, k: r.key, date: r.booking.date, time: r.booking.time, open: true }); store.set("mine", mine.slice(0, 20));
+    const mine = myList().filter(x => x.id !== r.booking.id); mine.unshift({ id: r.booking.id, k: r.key, date: r.booking.date, time: r.booking.time, barberId: r.booking.barberId, open: true }); store.set("mine", mine.slice(0, 20));
     done = { ...r.booking, key: r.key }; sheet = null; sending = false;
     renderSheet(); render(); window.scrollTo(0, 0); load();
   } catch (e) { sending = false; sheet.err = e.message; sheet.code = e.code; if (e.status === 409) await load(); renderSheet(); }
@@ -255,7 +256,7 @@ async function renderMine() {
     $("t-" + x.id).innerHTML = `${esc(b.time)}<small>${esc(dayName(b.date))} ${dn(b.date)} ${dm(b.date)}</small>`;
   }).catch(() => { const e = $("m-" + x.id); if (e) e.textContent = "Bulunamadı"; });
 }
-function syncMine(b) { const l = myList(); const x = l.find(y => y.id === b.id); if (!x) return; x.date = b.date; x.time = b.time; x.open = (b.status === "talep" || b.status === "onayli") && until(b.date, b.time) !== "geçti"; store.set("mine", l); }
+function syncMine(b) { const l = myList(); const x = l.find(y => y.id === b.id); if (!x) return; x.date = b.date; x.time = b.time; x.barberId = b.barberId; x.open = (b.status === "talep" || b.status === "onayli") && until(b.date, b.time) !== "geçti"; store.set("mine", l); }
 function renderManage() {
   const m = manage;
   if (m.loading) { $("app").innerHTML = `<div class="empty" style="margin-top:30px">Randevu yükleniyor…</div>`; return; }
