@@ -42,6 +42,8 @@ tr.off td { color: var(--soft) }
 .urow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: end; padding: 12px 0; border-top: 1px solid var(--hair) }
 .urow .meta { grid-column: 1 / -1; font-size: .85rem; color: var(--soft) }
 @media (max-width: 640px) { .urow { grid-template-columns: 1fr } }
+.state { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r); background: var(--paper); font-size: .93rem }
+.state .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex: none; background: var(--ok) }
 </style>
 </head>
 <body>
@@ -100,7 +102,7 @@ function render() {
   ${picked.size ? `<div class="note" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;box-shadow:inset 0 0 0 1.5px var(--bad)"><span><b>${picked.size} dükkân seçildi.</b> ${bulkAsk ? "Hesapları, ustaları ve randevularıyla birlikte kalıcı olarak silinecek." : ""}</span>
     <span class="mini">${bulkAsk ? `<button class="btn light sm" data-act="bulkNo">Vazgeç</button><button class="btn danger sm" data-act="bulkYes">Evet, ${picked.size} dükkânı sil</button>` : `<button class="btn light sm" data-act="pickNone">Seçimi kaldır</button><button class="btn danger sm" data-act="bulkAsk">Seçilenleri sil</button>`}</span></div>` : ""}
   <div class="tbl"><table><thead><tr><th style="width:34px"><input type="checkbox" aria-label="Hepsini seç" data-pickall ${list.length && picked.size === list.length ? "checked" : ""} style="width:18px;height:18px"></th><th>Dükkân</th><th>Bağlantı</th><th>Sahip girişi</th><th class="n">Usta</th><th class="n">Randevu</th><th>Son randevu</th><th>Not</th><th></th></tr></thead><tbody>
-    ${list.map(s => `<tr class="${s.disabled ? "off" : ""}"><td><input type="checkbox" aria-label="${esc(s.name)} seç" data-pick="${s.id}" ${picked.has(s.id) ? "checked" : ""} style="width:18px;height:18px"></td><td><b>${esc(s.name)}</b>${s.disabled ? ' <span class="tag iptal">Kapalı</span>' : s.barbers ? "" : ' <span class="tag mut">Kurulmadı</span>'}<div class="soft small">${day(s.createdAt)}</div></td>
+    ${list.map(s => `<tr class="${s.disabled ? "off" : ""}"><td><input type="checkbox" aria-label="${esc(s.name)} seç" data-pick="${s.id}" ${picked.has(s.id) ? "checked" : ""} style="width:18px;height:18px"></td><td><b>${esc(s.name)}</b>${s.disabled ? ' <span class="tag iptal">Kapalı</span>' : s.barbers ? "" : ' <span class="tag gelmedi">Usta yok · sayfa kapalı</span>'}<div class="soft small">${day(s.createdAt)}</div></td>
       <td>${editSlug === s.id ? `<form class="inline" data-slug="${s.id}" novalidate><input id="sl-${s.id}" value="${esc(s.slug)}" style="min-width:140px"><button class="btn sm" type="submit">Kaydet</button></form>` : `<a class="link mono" href="/${esc(s.slug)}" target="_blank" rel="noopener">/${esc(s.slug)}</a> <button class="link small soft" data-act="editSlug" data-id="${s.id}">değiştir</button>`}</td>
       <td class="mono small">${esc(s.owner || "—")}</td><td class="n">${s.barbers}</td><td class="n">${s.bookings}${s.open ? ` <span class="soft">(${s.open} açık)</span>` : ""}</td><td>${day(s.last)}</td>
       <td><input aria-label="Not" data-note="${s.id}" value="${esc(s.note)}" placeholder="Örn. Ahmet Bey, Kadıköy" style="min-width:160px;padding:7px 9px;font-size:.88rem"></td>
@@ -117,6 +119,8 @@ function detailHtml() {
   return `<div class="det"><div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:start">
       <div><span class="lbl">Dükkân yönetimi · /${esc(sh.slug)}</span><h2>${esc(sh.name)}</h2></div>
       <span class="mini"><button class="btn" data-act="enter" data-id="${sh.id}">Dükkân paneline gir</button><button class="btn light" data-act="closeDetail">Kapat</button></span></div>
+    ${sh.barbers ? `<div class="state ok" style="display:flex;gap:10px"><span class="dot"></span><span><b>Müşteri sayfası açık.</b> ${sh.barbers} usta randevu alıyor · <a class="link" href="/${esc(sh.slug)}" target="_blank" rel="noopener">/${esc(sh.slug)}</a></span></div>`
+      : `<div class="note" style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center;box-shadow:inset 0 0 0 1.5px var(--bad)"><span><b>Müşteri sayfası kapalı: hiç usta yok.</b> Bu yüzden bağlantı “Yakında açılıyor” gösteriyor.</span><button class="btn sm" data-act="openChair" data-id="${sh.id}">Hemen aç</button></div>`}
     <p class="soft small" style="margin:0">“Dükkân paneline gir” seni bu dükkânın usta paneline sahip yetkisiyle sokar: ayarlar, ustalar, randevular ve müşteriler dahil her şeyi değiştirebilirsin. Oturum 8 saat sürer.</p>
     <div class="inline"><label class="fld" for="dName"><span>Dükkân adı</span><input id="dName" maxlength="40" value="${esc(sh.name)}"></label><button class="btn light sm" data-act="saveName">Adı kaydet</button>
       <label class="fld" for="dSlug"><span>Bağlantı adı</span><input id="dSlug" maxlength="30" value="${esc(sh.slug)}" autocapitalize="none"></label><button class="btn light sm" data-act="saveSlug">Bağlantıyı kaydet</button></div>
@@ -156,6 +160,7 @@ document.addEventListener("click", async (e) => {
     case "bulkAsk": bulkAsk = true; render(); break;
     case "bulkNo": bulkAsk = false; render(); break;
     case "bulkYes": try { const r = await call("deleteShops", { ids: [...picked], confirm: true }); toast(r.deleted + " dükkân silindi"); if (detail && picked.has(detail)) { detail = null; D = null; } picked.clear(); bulkAsk = false; await load(); } catch (x) { toast(x.message); } break;
+    case "openChair": try { await call("openChair", { id }); toast("Müşteri sayfası açıldı"); await load(); openDetail(id); } catch (x) { toast(x.message); } break;
     case "manage": openDetail(id); break;
     case "closeDetail": detail = null; D = null; render(); break;
     case "enter": try { const r = await call("enter", { id }); window.open("/usta", "_blank") || (location.href = "/usta"); toast("Dükkân paneli açıldı"); } catch (x) { toast(x.message); } break;

@@ -50,7 +50,7 @@ export default handle(async (req, res) => {
     const s = await hgetJSON("shops", String(query(req).id || "")); if (!s) return fail(res, 404, "Dükkân bulunamadı.");
     const [users, c] = await Promise.all([hallJSON(K(s.id, "users")), getCfg(s.id)]);
     const chair = (id) => (c.barbers.find(x => x.id === id) || {}).name || null;
-    return send(res, 200, { shop: { id: s.id, slug: s.slug, name: c.shopName, disabled: !!s.disabled, note: s.note || "" },
+    return send(res, 200, { shop: { id: s.id, slug: s.slug, name: c.shopName, disabled: !!s.disabled, note: s.note || "", barbers: c.barbers.filter(x => x.active !== false).length },
       users: Object.values(users).map(x => ({ ...userView(x), disabled: !!x.disabled, chair: chair(x.barberId) })).sort((x, y) => (x.role === "sahip" ? -1 : 0) - (y.role === "sahip" ? -1 : 0)) });
   }
   if (req.method !== "POST") return fail(res, 404, "Bilinmeyen istek.");
@@ -67,9 +67,10 @@ export default handle(async (req, res) => {
       const id = "d" + rid(5);
       const shop = { id, slug, name: `Berber ${slug.split("-").pop()}`, createdAt: Date.now() + i, by: me.username };
       await hsetJSON("shops", id, shop); await redis("HSET", "slugs", slug, id);
-      await saveCfg(id, { ...DEFAULT_CFG, shopName: shop.name });
+      const chair = "b" + rid(4);
+      await saveCfg(id, { ...DEFAULT_CFG, shopName: shop.name, barbers: [{ id: chair, name: "Usta", step: 30 }] });
       const username = slug.replace(/-/g, ""), password = genPass();
-      await hsetJSON(K(id, "users"), username, { username, name: "Dükkân sahibi", role: "sahip", barberId: null, ver: 1, createdAt: Date.now(), ...hashPass(password) });
+      await hsetJSON(K(id, "users"), username, { username, name: "Usta", role: "sahip", barberId: chair, ver: 1, createdAt: Date.now(), ...hashPass(password) });
       made.push({ id, slug, username, password });
     }
     return send(res, 200, { made });
@@ -152,6 +153,16 @@ export default handle(async (req, res) => {
     if (password.length < 8) return fail(res, 400, "Şifre en az 8 karakter olmalı.");
     await hsetJSON(UK, username, { username, name, role: b.role === "usta" ? "usta" : "sahip", barberId: null, ver: 1, createdAt: Date.now(), ...hashPass(password) });
     return send(res, 200, { username, password });
+  }
+  if (a === "openChair") {   // a shop with no active usta: give the owner a chair so customers can book
+    const c = await getCfg(s.id);
+    if (c.barbers.some(x => x.active !== false)) return send(res, 200, { ok: true });
+    const users = Object.values(await hallJSON(UK));
+    const owner = users.find(x => x.role === "sahip"); if (!owner) return fail(res, 404, "Bu dükkânın sahip hesabı yok; önce bir sahip hesabı ekle.");
+    if (owner.barberId && c.barbers.some(x => x.id === owner.barberId)) c.barbers = c.barbers.map(x => x.id === owner.barberId ? { ...x, active: true, removed: false } : x);
+    else { const id = "b" + rid(4); c.barbers = [...c.barbers, { id, name: owner.name && owner.name !== "Dükkân sahibi" ? owner.name : "Usta", step: 30 }]; owner.barberId = id; await hsetJSON(UK, owner.username, owner); }
+    await saveCfg(s.id, c);
+    return send(res, 200, { ok: true });
   }
   if (a === "enter") {        // open this shop's panel with owner rights (8-hour session, marked as admin)
     const users = Object.values(await hallJSON(UK));

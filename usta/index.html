@@ -229,7 +229,9 @@ function vAgenda() {
   }
   items.sort((a, b) => a.t - b.t || (a.k === "g") - (b.k === "g"));
   const strip = Array.from({ length: 16 }, (_, i) => addDays(n.date, i - 1));
-  return `<div class="ph"><div><span class="lbl">${esc(dayLong(date))}${closed ? " · kapalı" : ""}</span><h1>${date === n.date ? "Bugün" : esc(dshort(date) + " " + dnum(date) + " " + dmon(date))}</h1></div>
+  const noChair = !barbers().length;
+  return `${noChair ? `<div class="note" style="margin-top:16px;box-shadow:inset 0 0 0 1.5px var(--bad)"><b>Müşteri sayfan şu an kapalı: hiç usta yok.</b> Müşterilerin randevu alabilmesi için ${owner() ? `kendi koltuğunu aç ya da usta ekle.<div class="acts" style="margin-top:10px"><button class="btn sm" data-act="chair" data-v="1">Ben de müşteri alıyorum</button><button class="btn light sm" data-act="go" data-v="ustalar">Usta ekle</button></div>` : "dükkân sahibinin bir usta koltuğu açması gerekiyor."}</div>` : ""}
+  <div class="ph"><div><span class="lbl">${esc(dayLong(date))}${closed ? " · kapalı" : ""}</span><h1>${date === n.date ? "Bugün" : esc(dshort(date) + " " + dnum(date) + " " + dmon(date))}</h1></div>
     <div class="acts"><button class="btn" data-act="newBook">+ Randevu</button><button class="btn light" data-act="newBlock">Saat kapat</button></div></div>
   ${A.pending.length ? `<div class="inbox"><div class="h"><b>Onay bekleyen ${A.pending.length} talep</b><span class="soft small">Onaylayınca kesinleşir</span></div>
     ${A.pending.slice(0, 20).map(p => `<div class="req"><span class="tm">${p.time}<small>${esc(dshort(p.date))} ${dnum(p.date)} ${dmon(p.date)}</small></span>

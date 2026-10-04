@@ -60,7 +60,6 @@ async def main():
         await ow.click("[data-act=saveCfg]"); await ow.wait_for_timeout(400)
         ok("settings saved", "Ayarlar güncel" in await ow.inner_text("main"), await ow.inner_text("#toast"))
         await ow.click("nav [data-v=ustalar]"); await ow.wait_for_timeout(400)
-        await ow.click("[data-act=chair]"); await ow.wait_for_timeout(500)
         await ow.click("[data-act=addOpen]"); await ow.wait_for_timeout(200)
         await ow.fill("#aName", "Emre"); await ow.fill("#aTitle", "Sakal ustası"); await ow.select_option("#aStep", "20"); await ow.fill("#aUser", "emre"); await ow.fill("#aPass", "emre12345")
         await ow.click("#addF button[type=submit]"); await ow.wait_for_timeout(600)
@@ -151,7 +150,26 @@ async def main():
         raw = urllib.request.urlopen(BASE + f"/api/public?shop={slug}&action=init").read().decode()
         ok("public data has no names/phones", "Ahmet" not in raw and "0532" not in raw)
         other = rows[1].split("\t")[1].strip()
-        ok("other shop untouched (not set up)", get(f"/api/public?shop={other}&action=init")["setup"] is True)
+        oi = get(f"/api/public?shop={other}&action=init")
+        ok("new shop is bookable right away (owner chair)", oi["setup"] is False and [b["name"] for b in oi["cfg"]["barbers"]] == ["Usta"], oi["cfg"]["barbers"])
+        # close that chair, then the admin's "Hemen aç" reopens the customer page
+        import http.cookiejar
+        cj = http.cookiejar.CookieJar(); op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+        def opost(path, data):
+            req = urllib.request.Request(BASE + path, data=json.dumps(data).encode(), headers={"Content-Type": "application/json"})
+            try:
+                with op.open(req) as r: return r.status
+            except urllib.error.HTTPError as e: return e.code
+        ocred = rows[1].split("\t")
+        opost("/api/auth?action=login", {"shop": other, "username": ocred[2].strip(), "password": ocred[3].strip()})
+        opost("/api/admin?action=ownerChair", {"on": False})
+        ok("no usta → customer page closed", get(f"/api/public?shop={other}&action=init")["setup"] is True)
+        await ad.reload(); await ad.wait_for_timeout(600)
+        await ad.click(f"tr:has-text('/{other}') [data-act=manage]"); await ad.wait_for_timeout(600)
+        ok("admin sees 'page closed' warning", "Müşteri sayfası kapalı" in await ad.inner_text(".det"))
+        await ad.click("[data-act=openChair]"); await ad.wait_for_timeout(800)
+        ok("admin 'Hemen aç' reopens customer page", get(f"/api/public?shop={other}&action=init")["setup"] is False and "Müşteri sayfası açık" in await ad.inner_text(".det"))
+        await ad.click("[data-act=closeDetail]"); await ad.wait_for_timeout(200)
         ok("owner can't log into another shop", post("/api/auth?action=login", {"shop": other, "username": user0, "password": pass0})[0] == 401)
         # platform: reset owner password
         await ad.reload(); await ad.wait_for_timeout(600)
