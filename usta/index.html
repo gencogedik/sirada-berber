@@ -260,7 +260,7 @@ function rowB(b) {
       ${b.note ? `<span class="cn">Not: <span class="band">${esc(b.note)}</span></span>` : ""}${b.staffNote ? `<span class="sn">${esc(b.staffNote)}</span>` : ""}</div>
     <div class="q">${q}</div>
     ${open ? `<div class="det">
-      <div class="line"><a class="btn light sm" href="tel:${b.phone}">Ara · ${esc(pretty(b.phone))}</a><a class="btn light sm" href="${wa}" target="_blank" rel="noopener">WhatsApp mesajı</a></div>
+      ${b.phone ? `<div class="line"><a class="btn light sm" href="tel:${b.phone}">Ara · ${esc(pretty(b.phone))}</a><a class="btn light sm" href="${wa}" target="_blank" rel="noopener">WhatsApp mesajı</a></div>` : `<span class="soft small">Telefon numarası girilmemiş.</span>`}
       <label class="fld" for="sn-${b.id}"><span>Usta notu <span class="soft">(müşteri görmez)</span></span><textarea id="sn-${b.id}" maxlength="300" placeholder="Örn. 3 numara, kare sakal">${esc(b.staffNote)}</textarea></label>
       <div><button class="btn light sm" data-act="note" data-id="${b.id}">Notu kaydet</button></div>
       ${live ? `<div class="line"><label class="fld" for="mvD-${b.id}"><span>Yeni gün</span><input type="date" id="mvD-${b.id}" value="${b.date}" min="${nowTR().date}" data-mv="${b.id}"></label>
@@ -288,7 +288,7 @@ function renderSheet() {
         <label class="fld" for="bDate"><span>Gün</span><input type="date" id="bDate" value="${sheet.date}" min="${nowTR().date}" data-re></label>
         <label class="fld" for="bTime"><span>Saat</span><select id="bTime">${freeOpts(sheet.barber, sheet.date, s.dur, null, sheet.time)}</select></label>
         <label class="fld" for="bName"><span>Müşteri adı</span><input id="bName" value="${esc(sheet.name || "")}" autocomplete="off"></label>
-        <label class="fld" for="bPhone"><span>Telefon</span><input id="bPhone" type="tel" inputmode="tel" value="${esc(sheet.phone || "")}" placeholder="05xx xxx xx xx" autocomplete="off"></label>
+        <label class="fld" for="bPhone"><span>Telefon <span class="soft">(isteğe bağlı)</span></span><input id="bPhone" type="tel" inputmode="tel" value="${esc(sheet.phone || "")}" placeholder="05xx xxx xx xx" autocomplete="off"></label>
         <label class="fld" for="bNote" style="grid-column:1/-1"><span>Not</span><textarea id="bNote" maxlength="240">${esc(sheet.note || "")}</textarea></label>
       </div>${sheet.err ? `<div class="err">${esc(sheet.err)}</div>` : ""}
       <div class="acts"><button type="button" class="btn light" data-act="close">Vazgeç</button><button class="btn" type="submit" ${busy ? "disabled" : ""}>${busy ? "Kaydediliyor…" : "Kaydet"}</button></div></form></div>`;
@@ -330,7 +330,7 @@ function vCust() {
   const list = customers.filter(c => !q || c.name.toLocaleLowerCase("tr-TR").includes(q) || (qd && c.phone.includes(qd))).sort((a, b) => (b.next ? 1 : 0) - (a.next ? 1 : 0) || b.visits - a.visits || a.name.localeCompare(b.name, "tr"));
   return `<div class="ph"><div><span class="lbl">${customers.length} müşteri</span><h1>Müşteriler</h1></div></div>
     <label class="fld" for="cq" style="max-width:420px"><input id="cq" type="search" placeholder="İsim ya da telefon ara" value="${esc(custQ)}" aria-label="Müşteri ara"></label>
-    <div class="list" style="margin-top:8px">${list.map(c => `<div class="cust"><div><b>${esc(c.name)}</b><div class="soft small"><a href="tel:${c.phone}" class="mono" style="text-decoration:none">${esc(pretty(c.phone))}</a>${c.note ? " · " + esc(c.note) : ""}</div></div>
+    <div class="list" style="margin-top:8px">${list.map(c => `<div class="cust"><div><b>${esc(c.name)}</b><div class="soft small">${c.phone ? `<a href="tel:${c.phone}" class="mono" style="text-decoration:none">${esc(pretty(c.phone))}</a>` : "telefon yok"}${c.note ? " · " + esc(c.note) : ""}</div></div>
       <div class="r"><b class="mono">${c.visits}</b> ziyaret${c.noshow ? ` · <span style="color:var(--warn)">${c.noshow} gelmedi</span>` : ""}<div class="soft">${tl(c.spent)}${c.last ? " · son " + dnum(c.last) + " " + dmon(c.last) : ""}</div>${c.next ? `<div><span class="tag bekliyor">${esc(dshort(c.next.slice(0, 10)) + " " + c.next.slice(11))}</span></div>` : ""}</div></div>`).join("")
       || `<div class="empty">${q ? "Aramaya uyan müşteri yok." : "<b>Henüz müşteri yok.</b> Randevular geldikçe burası kendiliğinden dolar."}</div>`}</div>`;
 }

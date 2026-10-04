@@ -181,6 +181,7 @@ export const isOpen = (b) => OPEN.has(b.status) && endTs(b) > Date.now();
 // One open booking per customer phone *per barber*: each usta keeps their own queue.
 const actKey = (shop, barberId, phone) => `act:${shop}:${barberId}:${phone}`;
 export async function claimPhone(shop, barberId, phone, id) {
+  if (!phone) return true;   // bookings without a phone are not limited
   for (let i = 0; i < 2; i++) {
     if ((await redis("SET", actKey(shop, barberId, phone), id, "NX")) === "OK") return true;
     const cur = await redis("GET", actKey(shop, barberId, phone));
@@ -190,7 +191,7 @@ export async function claimPhone(shop, barberId, phone, id) {
   }
   return false;
 }
-export async function releasePhone(shop, b) { const k = actKey(shop, b.barberId, b.phone); const cur = await redis("GET", k); if (cur === b.id) await redis("DEL", k); }
+export async function releasePhone(shop, b) { if (!b.phone) return; const k = actKey(shop, b.barberId, b.phone); const cur = await redis("GET", k); if (cur === b.id) await redis("DEL", k); }
 
 export async function createBooking(shop, c, { serviceId, barberId, date, time, name, phone, note }, meta) {
   const s = c.services.find(x => x.id === serviceId);
@@ -202,9 +203,10 @@ export async function createBooking(shop, c, { serviceId, barberId, date, time, 
   const m = toMin(time);
   if (meta.source === "online" && date === now.date && m <= now.min + Number(c.minNotice || 0)) return { error: "Bu saat için artık çok geç; daha ileri bir saat seç." };
   if (meta.source !== "online" && date === now.date && m < now.min) return { error: "Geçmiş bir saate randevu eklenemez." };
-  const nm = clip(name, 60), ph = validPhone(phone);
+  const rawPhone = String(phone || "").trim(), nm = clip(name, 60), ph = rawPhone ? validPhone(rawPhone) : "";
   if (nm.length < 2) return { error: "Adını yaz." };
-  if (!ph) return { error: "Telefonu 05xx xxx xx xx biçiminde yaz." };
+  // online customers must leave a phone; a barber adding a booking by hand may skip it
+  if (ph === null || (!ph && meta.source === "online")) return { error: "Telefonu 05xx xxx xx xx biçiminde yaz." };
   const order = barberId && barberId !== "any" ? activeBarbers(c).filter(b => b.id === barberId) : activeBarbers(c);
   if (!order.length) return { error: "Usta bulunamadı." };
   const cands = order.filter(b => !slotOk(c, b, date, m, s.dur));
@@ -212,9 +214,9 @@ export async function createBooking(shop, c, { serviceId, barberId, date, time, 
   const id = rid(9);
   let chosen = null, blockedByOpen = 0;
   for (const b of cands) {
-    if (!(await claimPhone(shop, b.id, ph, id))) { blockedByOpen++; continue; }
+    if (ph && !(await claimPhone(shop, b.id, ph, id))) { blockedByOpen++; continue; }
     if (await lockRange(shop, date, b.id, m, s.dur, id)) { chosen = b; break; }
-    await redis("DEL", actKey(shop, b.id, ph));
+    if (ph) await redis("DEL", actKey(shop, b.id, ph));
   }
   if (!chosen && blockedByOpen === cands.length) return { error: cands.length === 1 ? `${cands[0].name} ile zaten açık bir randevun var. Yeni randevu için önce onu iptal et.` : "Bu ustalarla zaten açık randevun var. Yeni randevu için önce onu iptal et.", code: "open" };
   if (!chosen) return { error: "Bu saat az önce doldu. Başka bir saat seç.", code: "taken" };

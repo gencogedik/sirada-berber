@@ -22,7 +22,7 @@ export default handle(async (req, res) => {
     const bookings = all.filter(b => b.date >= from && b.date <= to && mine(b.barberId)).map(clean);
     const pending = all.filter(b => b.status === "talep" && mine(b.barberId) && startTs(b.date, b.time) > Date.now()).sort((x, y) => (x.date + x.time).localeCompare(y.date + y.time)).map(clean);
     const blocks = Object.values(bl).filter(b => b.date >= from && b.date <= to && mine(b.barberId));
-    const visits = {}; for (const b of all) if (b.status === "geldi") visits[b.phone] = (visits[b.phone] || 0) + 1;
+    const visits = {}; for (const b of all) if (b.status === "geldi" && b.phone) visits[b.phone] = (visits[b.phone] || 0) + 1;
     const counts = {}; for (const b of all) if (OPEN.has(b.status) && mine(b.barberId) && b.date >= now.date) counts[b.date] = (counts[b.date] || 0) + 1;
     const online7 = all.filter(b => b.source === "online" && mine(b.barberId) && b.createdAt > Date.now() - 7 * 864e5).length;
     const d30 = all.filter(b => mine(b.barberId) && b.createdAt > Date.now() - 30 * 864e5 && (b.status === "geldi" || b.status === "gelmedi"));
@@ -35,7 +35,7 @@ export default handle(async (req, res) => {
     const bk = await hallJSON(BK); const map = {};
     for (const b of Object.values(bk)) {
       if (!mine(b.barberId)) continue;
-      const x = (map[b.phone] ||= { name: b.name, phone: b.phone, visits: 0, noshow: 0, cancels: 0, spent: 0, last: "", next: "", note: "", t: 0 });
+      const x = (map[b.phone || "ad:" + b.name.toLocaleLowerCase("tr-TR")] ||= { name: b.name, phone: b.phone, visits: 0, noshow: 0, cancels: 0, spent: 0, last: "", next: "", note: "", t: 0 });
       if (b.createdAt > x.t) { x.t = b.createdAt; x.name = b.name; }
       if (b.status === "geldi") { x.visits++; x.spent += b.price || 0; if (b.date > x.last) x.last = b.date; }
       if (b.status === "gelmedi") x.noshow++;

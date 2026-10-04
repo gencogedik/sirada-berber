@@ -32,6 +32,29 @@ export default handle(async (req, res) => {
   const me = await currentAdmin(req);
   if (!me) return fail(res, 401, "Oturum kapandı. Tekrar giriş yap.");
 
+  if (req.method === "GET" && a === "admins") return send(res, 200, { admins: Object.values(admins).map(x => ({ username: x.username, createdAt: x.createdAt, by: x.by || null })), me: me.username });
+  if (req.method === "POST" && a === "addAdmin") {   // another platform admin (full rights)
+    const b = body(req), username = normUser(b.username);
+    if (username.length < 3) return fail(res, 400, "Kullanıcı adı en az 3 harf olmalı (a-z, 0-9).");
+    if (admins[username]) return fail(res, 400, "Bu yönetici zaten var.");
+    if (String(b.password || "").length < 10) return fail(res, 400, "Yönetici şifresi en az 10 karakter olmalı.");
+    await hsetJSON("padmins", username, { username, ver: 1, createdAt: Date.now(), by: me.username, ...hashPass(b.password) });
+    return send(res, 200, { ok: true });
+  }
+  if (req.method === "POST" && a === "removeAdmin") {
+    const username = normUser(body(req).username);
+    if (username === me.username) return fail(res, 400, "Kendi yönetici hesabını silemezsin.");
+    if (!admins[username]) return fail(res, 404, "Yönetici bulunamadı.");
+    await redis("HDEL", "padmins", username);
+    return send(res, 200, { ok: true });
+  }
+  if (req.method === "POST" && a === "adminPass") {  // change your own admin password
+    const b = body(req);
+    if (!checkPass(b.old || "", me)) return fail(res, 400, "Mevcut şifre hatalı.");
+    if (String(b.password || "").length < 10) return fail(res, 400, "Yeni şifre en az 10 karakter olmalı.");
+    const ad = { ...me, ...hashPass(b.password), ver: (me.ver || 1) + 1 }; await hsetJSON("padmins", me.username, ad);
+    return send(res, 200, { ok: true }, { "Set-Cookie": adminCookie(ad) });
+  }
   if (req.method === "GET" && a === "shops") {
     const shops = Object.values(await hallJSON("shops"));
     const out = [];
@@ -49,7 +72,7 @@ export default handle(async (req, res) => {
   if (req.method === "GET" && a === "shop") {   // one shop's accounts, for the admin's detail view
     const s = await hgetJSON("shops", String(query(req).id || "")); if (!s) return fail(res, 404, "Dükkân bulunamadı.");
     const [users, c] = await Promise.all([hallJSON(K(s.id, "users")), getCfg(s.id)]);
-    const chair = (id) => (c.barbers.find(x => x.id === id) || {}).name || null;
+    const chair = (id) => { const x = c.barbers.find(y => y.id === id && !y.removed); return x && x.active !== false ? x.name : null; };
     return send(res, 200, { shop: { id: s.id, slug: s.slug, name: c.shopName, disabled: !!s.disabled, note: s.note || "", barbers: c.barbers.filter(x => x.active !== false).length },
       users: Object.values(users).map(x => ({ ...userView(x), disabled: !!x.disabled, chair: chair(x.barberId) })).sort((x, y) => (x.role === "sahip" ? -1 : 0) - (y.role === "sahip" ? -1 : 0)) });
   }
@@ -69,7 +92,7 @@ export default handle(async (req, res) => {
       await hsetJSON("shops", id, shop); await redis("HSET", "slugs", slug, id);
       const chair = "b" + rid(4);
       await saveCfg(id, { ...DEFAULT_CFG, shopName: shop.name, barbers: [{ id: chair, name: "Usta", step: 30 }] });
-      const username = slug.replace(/-/g, ""), password = genPass();
+      const username = slug.replace(/-/g, ""), password = username + "123";   // first password: <username>123
       await hsetJSON(K(id, "users"), username, { username, name: "Usta", role: "sahip", barberId: chair, ver: 1, createdAt: Date.now(), ...hashPass(password) });
       made.push({ id, slug, username, password });
     }
@@ -149,10 +172,23 @@ export default handle(async (req, res) => {
     const username = normUser(b.username), name = clip(b.name, 40) || "Dükkân sahibi";
     if (username.length < 3) return fail(res, 400, "Kullanıcı adı en az 3 harf olmalı (a-z, 0-9).");
     if (await hgetJSON(UK, username)) return fail(res, 400, "Bu kullanıcı adı bu dükkânda zaten var.");
-    const password = b.password ? String(b.password) : genPass();
-    if (password.length < 8) return fail(res, 400, "Şifre en az 8 karakter olmalı.");
-    await hsetJSON(UK, username, { username, name, role: b.role === "usta" ? "usta" : "sahip", barberId: null, ver: 1, createdAt: Date.now(), ...hashPass(password) });
+    const password = b.password ? String(b.password) : username + "123";
+    if (password.length < 6) return fail(res, 400, "Şifre en az 6 karakter olmalı.");
+    let barberId = null;
+    if (b.role === "usta") {   // an usta login always comes with their own chair, so customers can pick them
+      const c = await getCfg(s.id); barberId = "b" + rid(4);
+      c.barbers = [...c.barbers, { id: barberId, name: name === "Dükkân sahibi" ? "Usta" : name, step: 30 }]; await saveCfg(s.id, c);
+    }
+    await hsetJSON(UK, username, { username, name, role: b.role === "usta" ? "usta" : "sahip", barberId, ver: 1, createdAt: Date.now(), ...hashPass(password) });
     return send(res, 200, { username, password });
+  }
+  if (a === "giveChair") {     // a login without a chair (or a hidden one): give / reopen it
+    const u = await getUser(); if (!u) return;
+    const c = await getCfg(s.id);
+    if (u.barberId && c.barbers.some(x => x.id === u.barberId)) c.barbers = c.barbers.map(x => x.id === u.barberId ? { ...x, active: true, removed: false } : x);
+    else { u.barberId = "b" + rid(4); c.barbers = [...c.barbers, { id: u.barberId, name: u.name && u.name !== "Dükkân sahibi" ? u.name : "Usta", step: 30 }]; await hsetJSON(UK, u.username, u); }
+    await saveCfg(s.id, c);
+    return send(res, 200, { ok: true });
   }
   if (a === "openChair") {   // a shop with no active usta: give the owner a chair so customers can book
     const c = await getCfg(s.id);

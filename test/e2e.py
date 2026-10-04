@@ -47,6 +47,10 @@ async def main():
         ok("10 shop accounts created", len(rows) == 10, rows[0] if rows else "")
         await ad.screenshot(path=OUT + "01_yonetim.png", full_page=True)
         cred = rows[0].split("\t"); slug, user0, pass0 = cred[1].strip(), cred[2].strip(), cred[3].strip()
+        ok("first password is username+123", pass0 == user0 + "123", (user0, pass0))
+        # second platform admin (e.g. for Baran)
+        await ad.fill("#admU", "baran"); await ad.fill("#admP", "baran-sifre-2026"); await ad.click("#admF button[type=submit]"); await ad.wait_for_timeout(700)
+        ok("second admin added and can log in", "baran" in await ad.inner_text("#root") and post("/api/platform?action=login", {"username": "baran", "password": "baran-sifre-2026"})[0] == 200)
         # 2. owner logs in, sets up the shop
         oc, ow = await ctx()
         await ow.goto(BASE + "/usta"); await ow.wait_for_timeout(300)
@@ -133,9 +137,9 @@ async def main():
         ok("same customer can book again after rejection", st == 200, st)
         await ow.click("[data-act=newBook]"); await ow.wait_for_timeout(300)
         await ow.fill("#bDate", d2); await ow.dispatch_event("#bDate", "change"); await ow.wait_for_timeout(200)
-        await ow.fill("#bName", "Ali Veli"); await ow.fill("#bPhone", "05331112233")
+        await ow.fill("#bName", "Ali Veli")  # no phone: optional for staff
         await ow.click("#bf button[type=submit]"); await ow.wait_for_timeout(800)
-        ok("phone booking added (approved directly)", "Ali Veli" in await ow.inner_text("main"), (await ow.inner_text("#sheet"))[-160:] + " | " + await ow.inner_text("#toast"))
+        ok("staff booking without phone added (approved directly)", "Ali Veli" in await ow.inner_text("main"), (await ow.inner_text("#sheet"))[-160:] + " | " + await ow.inner_text("#toast"))
         await ow.screenshot(path=OUT + "06_owner_agenda.png", full_page=True)
         # 6. customer cancels own booking, then can book again
         await cu.goto(BASE + f"/{slug}?r={mine[0]['id']}&k={mine[0]['k']}"); await cu.wait_for_timeout(500)
@@ -188,6 +192,10 @@ async def main():
         ok("admin renamed owner username", post("/api/auth?action=login", {"shop": slug, "username": "kemal", "password": newpw})[0] == 200 and post("/api/auth?action=login", {"shop": slug, "username": user0, "password": newpw})[0] == 401)
         await ad.fill("#uaU", "ortak"); await ad.fill("#uaN", "Ortak"); await ad.click("#uaF button[type=submit]"); await ad.wait_for_timeout(700)
         ok("admin added a second owner login", await ad.locator(".urow[data-u='ortak']").count() == 1)
+        await ad.fill("#uaU", "ahmetusta"); await ad.fill("#uaN", "Ahmet"); await ad.select_option("#uaR", "usta"); await ad.click("#uaF button[type=submit]"); await ad.wait_for_timeout(800)
+        ok("admin-added usta gets a chair customers can pick", "Ahmet" in [b["name"] for b in get(f"/api/public?shop={slug}&action=init")["cfg"]["barbers"]])
+        await ad.locator(".urow[data-u='ortak'] [data-act=uChair]").click(); await ad.wait_for_timeout(800)
+        ok("Koltuk ver gives a chair to a login without one", "Ortak" in [b["name"] for b in get(f"/api/public?shop={slug}&action=init")["cfg"]["barbers"]])
         await ad.screenshot(path=OUT + "08_admin_detail.png", full_page=True)
         await ad.click("[data-act=enter]"); await ad.wait_for_timeout(900)
         pages = ac.pages; up = pages[-1]
