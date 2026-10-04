@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Usta paneli</title>
+<title>Usta paneli · Sırada</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#f4f0e7">
 <meta name="color-scheme" content="light only">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
-<link rel="stylesheet" href="/assets/base.css?v=3">
+<link rel="stylesheet" href="/assets/base.css?v=4">
 <style>
 body { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) }
-.wrap { max-width: 860px }
-.auth { max-width: 400px; margin: 9vh auto 0; display: grid; gap: 18px }
+.wrap { max-width: 880px }
+.auth { max-width: 400px; margin: 8vh auto 0; display: grid; gap: 18px }
 .auth h1 { font-size: 2.6rem }
 .mark { width: 44px; height: 44px; border-radius: 12px; background: var(--band); display: grid; place-items: center }
 header.top { display: flex; align-items: center; gap: 12px; padding-block: 16px 10px; border-bottom: 1px solid var(--hair) }
@@ -22,28 +22,37 @@ header.top .shop { margin-right: auto; min-width: 0 }
 header.top .shop b { font-family: var(--serif); font-weight: 400; font-size: 1.3rem; display: block; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
 .me { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; font-weight: 600; font-size: .9rem }
 .me:hover { background: var(--card) }
-.me .av { width: 28px; height: 28px; border-radius: 50%; background: var(--band); color: var(--on-band); display: grid; place-items: center; font-size: .78rem; font-weight: 700 }
+.av { width: 30px; height: 30px; border-radius: 50%; background: var(--band); color: var(--on-band); display: grid; place-items: center; font-size: .78rem; font-weight: 700; flex: none }
 nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; justify-content: center; gap: 4px; background: var(--paper); border-top: 1px solid var(--hair); padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)) }
-nav.tabs button { flex: 1; max-width: 150px; display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: 10px; font-size: .78rem; font-weight: 600; color: var(--soft) }
+nav.tabs button { flex: 1; max-width: 150px; display: grid; justify-items: center; gap: 2px; padding: 6px 4px; border-radius: 10px; font-size: .78rem; font-weight: 600; color: var(--soft); position: relative }
 nav.tabs button svg { width: 22px; height: 22px }
 nav.tabs button[aria-current="page"] { color: var(--ink); background: var(--card) }
-@media (min-width: 900px) { nav.tabs { position: static; justify-content: flex-start; border: 0; padding: 12px 0 0; background: none } nav.tabs button { flex: none; grid-auto-flow: column; gap: 8px; padding: 8px 14px; font-size: .9rem } body { padding-bottom: 40px } }
+nav.tabs .badge { position: absolute; top: 2px; left: 50%; margin-left: 6px; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--bad); color: #fff; font-size: .65rem; font-weight: 700; line-height: 18px }
+@media (min-width: 900px) { nav.tabs { position: static; justify-content: flex-start; border: 0; padding: 12px 0 0; background: none } nav.tabs button { flex: none; grid-auto-flow: column; gap: 8px; padding: 8px 14px; font-size: .9rem } nav.tabs .badge { position: static; margin: 0 } body { padding-bottom: 40px } }
 .ph { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; padding-block: 24px 12px }
 .ph h1 { font-size: clamp(2rem, 7vw, 2.8rem) }
 .ph .acts > .btn { flex: none }
 .sum { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 12px 0; border-bottom: 1px solid var(--hair); font-size: .92rem }
 .sum b { font-family: var(--mono) }
+.inbox { margin-top: 14px; border-radius: 14px; background: var(--card); padding: 4px 14px }
+.inbox > .h { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 6px }
+.inbox > .h b { font-family: var(--serif); font-weight: 400; font-size: 1.3rem }
+.req { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 0; border-top: 1px solid var(--hair); align-items: center }
+.req .tm { font-family: var(--mono); font-weight: 600; line-height: 1.15 }
+.req .tm small { display: block; font-family: var(--sans); font-weight: 500; font-size: .75rem; color: var(--soft) }
+.req .q { display: flex; gap: 6px; flex-wrap: wrap; justify-content: end }
+@media (max-width: 560px) { .req { grid-template-columns: 74px minmax(0, 1fr) } .req .q { grid-column: 2; justify-content: start } }
 .list { display: grid }
 .row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 4px 14px; padding: 14px 0; border-bottom: 1px solid var(--hair); align-items: start }
 .row .tm { font-family: var(--mono); font-weight: 600; font-size: 1.15rem; line-height: 1.15 }
 .row .tm small { display: block; font-size: .75rem; color: var(--soft); font-weight: 500 }
 .row .x { min-width: 0; display: grid; gap: 3px; cursor: pointer }
 .row .x b { font-size: 1.05rem }
-.row.iptal .x b, .row.iptal .tm { color: var(--soft); text-decoration: line-through }
+.row.iptal .x b, .row.iptal .tm, .row.red .x b, .row.red .tm { color: var(--soft); text-decoration: line-through }
 .row .q { display: flex; gap: 6px; flex-wrap: wrap; justify-content: end }
 .row .det { grid-column: 2 / -1; display: grid; gap: 12px; padding: 12px 0 2px }
-.row .det .line { display: flex; gap: 8px; flex-wrap: wrap; align-items: end }
-.row .det .line > .fld { flex: 1 1 150px }
+.line { display: flex; gap: 8px; flex-wrap: wrap; align-items: end }
+.line > .fld { flex: 1 1 150px }
 @media (max-width: 560px) { .row { grid-template-columns: 56px minmax(0, 1fr) } .row .q { grid-column: 2; justify-content: start } .row .det { grid-column: 1 / -1 } }
 .gap { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--hair); color: var(--soft); font-size: .88rem }
 @media (max-width: 560px) { .gap { grid-template-columns: 56px 1fr } }
@@ -59,14 +68,21 @@ nav.tabs button[aria-current="page"] { color: var(--ink); background: var(--card
 .tgl { display: flex; gap: 6px; flex-wrap: wrap }
 .tgl button { padding: 8px 12px; border-radius: 999px; box-shadow: inset 0 0 0 1.5px var(--hair-2); font-weight: 600; font-size: .9rem }
 .tgl button[aria-pressed="true"] { background: var(--ink); color: var(--paper); box-shadow: none }
+.switch { display: flex; gap: 10px; align-items: center; font-weight: 600 }
+.switch input { width: 20px; height: 20px }
 .cust { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 14px; padding: 12px 0; border-bottom: 1px solid var(--hair) }
 .cust .r { text-align: right; font-size: .88rem }
-.member { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 14px 0; border-bottom: 1px solid var(--hair); align-items: center }
-.member .ops { grid-column: 1 / -1; display: flex; gap: 8px; flex-wrap: wrap; align-items: end }
-.member .ops .fld { flex: 1 1 180px }
+.bc { border-radius: 14px; background: var(--card); padding: 14px; display: grid; gap: 12px }
+.bc .hd { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 2px 12px; align-items: center }
+.bc .hd .av { width: 44px; height: 44px; grid-row: span 2 }
+.bc .hd b { font-weight: 600 }
+.bc.off { opacity: .6 }
+.cards { display: grid; gap: 10px }
 .savebar { position: sticky; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); margin-top: 22px; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--band); color: var(--on-band); font-weight: 600 }
 @media (min-width: 900px) { .savebar { bottom: 12px } }
 .savebar .btn { background: var(--on-band); color: var(--band) }
+.linkbox { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: var(--r); background: var(--card) }
+.linkbox .mono { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; user-select: all }
 </style>
 </head>
 <body>
@@ -76,7 +92,11 @@ nav.tabs button[aria-current="page"] { color: var(--ink); background: var(--card
 <script>
 const DAYS = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"], DAYS_L = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
 const MON = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
-const ST = { bekliyor: "Bekliyor", geldi: "Geldi", gelmedi: "Gelmedi", iptal: "İptal" };
+const ST = { talep: "Onay bekliyor", onayli: "Onaylı", geldi: "Geldi", gelmedi: "Gelmedi", iptal: "İptal", red: "Reddedildi" };
+const TAG = { talep: "bekliyor", onayli: "mut", geldi: "geldi", gelmedi: "gelmedi", iptal: "iptal", red: "iptal" };
+const OPEN = ["talep", "onayli"];
+const STEPS = [10, 15, 20, 30, 40, 45, 60], DURS = [10, 15, 20, 30, 40, 45, 60, 75, 90, 120];
+const COLORS = ["#f6d24a", "#eeb2c4", "#bccaa9", "#e9a07c", "#b9c4e8", "#d9c3f0"];
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const pad = (n) => String(n).padStart(2, "0");
@@ -90,106 +110,100 @@ const pretty = (p) => { const d = String(p || ""); return d.length === 11 ? `${d
 const ini = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toLocaleUpperCase("tr-TR");
 function nowTR() { const t = new Date(Date.now() + 3 * 3600e3); return { date: t.toISOString().slice(0, 10), min: t.getUTCHours() * 60 + t.getUTCMinutes() }; }
 function ago(ts) { const m = Math.round((Date.now() - ts) / 60000); if (m < 1) return "az önce"; if (m < 60) return m + " dk önce"; const h = Math.round(m / 60); if (h < 24) return h + " sa önce"; return Math.round(h / 24) + " gün önce"; }
-function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2800); }
+function until(date, time) { const [y, mo, d] = date.split("-").map(Number); const ms = Date.UTC(y, mo - 1, d, 0, toMin(time)) - 3 * 3600e3 - Date.now(); if (ms <= 0) return "şimdi"; const m = Math.round(ms / 60000), dd = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60); return dd ? `${dd} gün ${h} sa sonra` : h ? `${h} sa ${m % 60} dk sonra` : `${m} dk sonra`; }
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 3000); }
 async function call(path, data) {
-  const r = await fetch(path, data ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : { credentials: "same-origin" });
+  const r = await fetch(path, data ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {});
   let j = {}; try { j = await r.json(); } catch {}
-  if (r.status === 401 && !path.includes("auth")) { me = null; renderAuth(); }
+  if (r.status === 401 && !path.includes("action=login")) { me = null; A = null; renderAuth("Oturum kapandı. Tekrar giriş yap."); }
   if (!r.ok) throw new Error(j.error || "Bağlantı hatası. Tekrar dene.");
   return j;
 }
 const ICON = {
   ajanda: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>',
   musteri: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1.2-3.6 4-5.5 7-5.5s5.8 1.9 7 5.5"/></svg>',
-  ekip: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3.5 19c.9-3 3-4.6 5.5-4.6s4.6 1.6 5.5 4.6M15 15c2.2-.2 4.2 1 5 3.6"/></svg>',
-  ayar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>',
-  hesap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="5" y="10.5" width="14" height="9.5" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>'
+  ustalar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.4"/><path d="M3.5 19c.9-3 3-4.6 5.5-4.6s4.6 1.6 5.5 4.6M15 15c2.2-.2 4.2 1 5 3.6"/></svg>',
+  saatler: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  ayar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>'
 };
 const SCISSORS = '<svg width="24" height="24" viewBox="0 0 26 26"><g fill="none" stroke="#1d1b19" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="7" r="3.3"/><circle cx="6" cy="19" r="3.3"/><path d="M9 8.6 23 17M9 17.4 23 9"/></g></svg>';
 
-let me = null, needsSetup = false, demo = false;
-let page = "ajanda";
-let A = null;            // agenda payload
-let range = null;
-let date = null, filter = "all", openId = null, cancelAsk = null;
-let sheet = null, busy = false;
-let customers = null, custQ = "";
-let team = null, draft = null;
-let pending = false;
-let forgot = false;
+let me = null, shopSlug = null, page = "ajanda", A = null, range = null;
+let date = null, filter = "all", openId = null, cancelAsk = null, rejectAsk = null;
+let sheet = null, busy = false, customers = null, custQ = "", team = null, draft = null, editB = null, pending = false;
+const lsGet = (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
-/* ---------- auth screens ---------- */
-function renderAuth(err) {
+/* ---------- login ---------- */
+function renderAuth(err, forgot) {
   $("sheet").innerHTML = "";
-  const r = $("root");
-  if (needsSetup) {
-    r.innerHTML = `<form class="auth" id="setupF" novalidate><div class="mark">${SCISSORS}</div>
-      <div><h1>Dükkânını <span class="band">kur.</span></h1><p class="soft" style="margin:8px 0 0">İlk hesap dükkân sahibinin hesabıdır. Ustaları sonra Ekip bölümünden eklersin.</p></div>
-      <label class="fld" for="sShop"><span>Dükkân adı</span><input id="sShop" maxlength="40" placeholder="Örn. Kemal'in Yeri" required></label>
-      <label class="fld" for="sName"><span>Adın</span><input id="sName" maxlength="40" autocomplete="name" placeholder="Örn. Kemal Usta" required></label>
-      <label class="fld" for="sUser"><span>Kullanıcı adı</span><input id="sUser" autocomplete="username" autocapitalize="none" placeholder="kemal" required></label>
-      <label class="fld" for="sPass"><span>Şifre <span class="soft">(en az 8 karakter)</span></span><input id="sPass" type="password" autocomplete="new-password" required></label>
-      <label style="display:flex;gap:10px;align-items:center;font-weight:600"><input id="sCuts" type="checkbox" checked style="width:20px;height:20px"> Ben de müşteri alıyorum</label>
-      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Dükkânı kur ve gir</button>
-      ${demo ? `<p class="note small">Deneme modu: veritabanı bağlı değil, kayıtlar sunucu yeniden başlayınca silinir.</p>` : ""}</form>`;
-    $("setupF").onsubmit = async (e) => { e.preventDefault();
-      try { const j = await call("/api/auth?action=setup", { shopName: $("sShop").value, name: $("sName").value, username: $("sUser").value, password: $("sPass").value, cuts: $("sCuts").checked });
-        me = j.user; needsSetup = false; boot2(); } catch (x) { renderAuth(x.message); } };
-    return;
-  }
+  const pre = new URLSearchParams(location.search).get("d") || lsGet("sirada_shop");
   if (forgot) {
-    r.innerHTML = `<form class="auth" id="recF" novalidate><div class="mark">${SCISSORS}</div>
-      <div><h1>Şifre <span class="band">yenile</span></h1><p class="soft" style="margin:8px 0 0">Usta isen yeni şifreni dükkân sahibinden iste; o Ekip bölümünden değiştirir. Dükkân sahibiysen Vercel'de belirlediğin <b>RESET_CODE</b> kurtarma koduyla yeni şifre koy.</p></div>
-      <label class="fld" for="rUser"><span>Kullanıcı adı</span><input id="rUser" autocomplete="username" autocapitalize="none"></label>
-      <label class="fld" for="rCode"><span>Kurtarma kodu</span><input id="rCode" type="password" autocomplete="off"></label>
-      <label class="fld" for="rPass"><span>Yeni şifre <span class="soft">(en az 8 karakter)</span></span><input id="rPass" type="password" autocomplete="new-password"></label>
-      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Şifreyi yenile ve gir</button>
-      <button type="button" class="link small" data-act="backLogin">Girişe dön</button></form>`;
-    $("recF").onsubmit = async (e) => { e.preventDefault();
-      try { const j = await call("/api/auth?action=recover", { username: $("rUser").value, code: $("rCode").value, password: $("rPass").value }); forgot = false; me = j.user; toast("Şifren yenilendi"); boot2(); } catch (x) { renderAuth(x.message); } };
+    $("root").innerHTML = `<div class="auth"><div class="mark">${SCISSORS}</div><div><h1>Şifre <span class="band">yenileme</span></h1></div>
+      <div class="note"><b>Usta isen:</b> dükkân sahibinden iste, Ustalar bölümünden yeni şifre verir.</div>
+      <div class="note"><b>Dükkân sahibiysen:</b> sana bu hesabı veren Sırada yetkilisinden iste; yönetim panelinden yeni şifre oluşturur.</div>
+      <button class="btn light" data-act="backLogin">Girişe dön</button></div>`;
     return;
   }
-  r.innerHTML = `<form class="auth" id="loginF" novalidate><div class="mark">${SCISSORS}</div>
-    <div><h1>Usta <span class="band">girişi</span></h1><p class="soft" style="margin:8px 0 0">Kullanıcı adını ve şifreni dükkân sahibinden al.</p></div>
-    <label class="fld" for="lUser"><span>Kullanıcı adı</span><input id="lUser" autocomplete="username" autocapitalize="none" required></label>
-    <label class="fld" for="lPass"><span>Şifre</span><input id="lPass" type="password" autocomplete="current-password" required></label>
+  $("root").innerHTML = `<form class="auth" id="loginF" novalidate><div class="mark">${SCISSORS}</div>
+    <div><h1>Usta <span class="band">girişi</span></h1><p class="soft" style="margin:8px 0 0">Dükkân kodu, müşteri bağlantının sonundaki addır. Örn. <span class="mono">berber-01</span></p></div>
+    <label class="fld" for="lShop"><span>Dükkân kodu</span><input id="lShop" autocapitalize="none" value="${esc(pre)}" placeholder="berber-01"></label>
+    <label class="fld" for="lUser"><span>Kullanıcı adı</span><input id="lUser" autocomplete="username" autocapitalize="none"></label>
+    <label class="fld" for="lPass"><span>Şifre</span><input id="lPass" type="password" autocomplete="current-password"></label>
     ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Giriş yap</button>
-    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><button type="button" class="link small" data-act="forgot">Şifremi unuttum</button><a class="link small soft" href="/">Müşteri randevu sayfası</a></div></form>`;
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><button type="button" class="link small" data-act="forgot">Şifremi unuttum</button><a class="link small soft" href="${pre ? "/" + esc(pre) : "/"}">Müşteri sayfası</a></div></form>`;
   $("loginF").onsubmit = async (e) => { e.preventDefault();
-    try { const j = await call("/api/auth?action=login", { username: $("lUser").value, password: $("lPass").value }); me = j.user; boot2(); } catch (x) { renderAuth(x.message); } };
-  setTimeout(() => $("lUser") && $("lUser").focus(), 30);
+    try { const j = await call("/api/auth?action=login", { shop: $("lShop").value, username: $("lUser").value, password: $("lPass").value }); me = j.user; shopSlug = j.shop.slug; lsSet("sirada_shop", shopSlug); boot2(); }
+    catch (x) { renderAuth(x.message); } };
+  setTimeout(() => { const f = pre ? $("lUser") : $("lShop"); f && f.focus(); }, 30);
 }
 
 /* ---------- shell ---------- */
 const owner = () => me && me.role === "sahip";
-function pages() { return owner() ? [["ajanda", "Ajanda"], ["musteri", "Müşteriler"], ["ekip", "Ekip"], ["ayar", "Ayarlar"]] : [["ajanda", "Ajanda"], ["musteri", "Müşteriler"], ["hesap", "Hesabım"]]; }
+function pages() { return owner() ? [["ajanda", "Ajanda"], ["musteri", "Müşteriler"], ["ustalar", "Ustalar"], ["ayar", "Ayarlar"]] : [["ajanda", "Ajanda"], ["musteri", "Müşteriler"], ["saatler", "Saatlerim"]]; }
 function typing() { const a = document.activeElement; return a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== "checkbox"; }
 function render(force) {
   if (!me) return renderAuth();
   if (!force && (typing() || sheet)) { pending = true; return; }
   pending = false;
-  const c = A ? A.cfg : null;
-  document.title = (c ? c.shopName + " · " : "") + "Usta paneli";
-  $("root").innerHTML = `<header class="top"><div class="shop"><b>${esc(c ? c.shopName : "")}</b><span class="lbl">Usta paneli</span></div>
+  const c = A ? A.cfg : null, pc = A ? A.pending.length : 0;
+  document.title = (pc ? `(${pc}) ` : "") + (c ? c.shopName + " · " : "") + "Usta paneli";
+  $("root").innerHTML = `<header class="top"><div class="shop"><b>${esc(c ? c.shopName : "")}</b><span class="lbl">${owner() ? "Dükkân sahibi" : "Usta paneli"}</span></div>
     <button class="me" data-act="go" data-v="hesap" aria-label="Hesabım"><span class="av">${esc(ini(me.name))}</span><span>${esc(me.name)}</span></button></header>
-    <nav class="tabs" aria-label="Menü">${pages().map(([k, l]) => `<button data-act="go" data-v="${k}" ${page === k ? 'aria-current="page"' : ""}>${ICON[k]}<span>${l}</span></button>`).join("")}</nav>
-    <main id="main">${!A ? `<p class="soft" style="padding-top:24px">Yükleniyor…</p>` : page === "ajanda" ? vAgenda() : page === "musteri" ? vCust() : page === "ekip" ? vTeam() : page === "ayar" ? vSettings() : vAccount()}</main>`;
+    <nav class="tabs" aria-label="Menü">${pages().map(([k, l]) => `<button data-act="go" data-v="${k}" ${page === k ? 'aria-current="page"' : ""}>${ICON[k]}<span>${l}</span>${k === "ajanda" && pc ? `<span class="badge">${pc}</span>` : ""}</button>`).join("")}</nav>
+    <main id="main">${!A ? `<p class="soft" style="padding-top:24px">Yükleniyor…</p>` : page === "ajanda" ? vAgenda() : page === "musteri" ? vCust() : page === "ustalar" ? vTeam() : page === "ayar" ? vSettings() : page === "saatler" ? vHours(me.barberId, true) : vAccount()}</main>`;
 }
 document.addEventListener("focusout", () => setTimeout(() => { if (pending && !typing() && !sheet) render(); }, 0));
-
 async function loadAgenda(force) {
-  const n = nowTR();
-  const want = date || n.date;
+  const n = nowTR(), want = date || n.date;
   if (!force && A && range && want >= range[0] && want <= range[1]) return;
-  const from = want < n.date ? addDays(want, -3) : addDays(n.date, -7), to = addDays(want > n.date ? want : n.date, 31);
-  try { A = await call(`/api/staff?action=agenda&from=${from}&to=${to}`); range = [from, to]; me = A.me; render(); } catch (e) { if (me) toast(e.message); }
+  const from = want < addDays(n.date, -7) ? addDays(want, -3) : addDays(n.date, -7), to = addDays(want > n.date ? want : n.date, 31);
+  try { A = await call(`/api/staff?action=agenda&from=${from}&to=${to}`); range = [from, to]; me = A.me; shopSlug = A.shop.slug; render(); } catch (e) { if (me) toast(e.message); }
 }
 
 /* ---------- agenda ---------- */
-const barbers = () => A.cfg.barbers.filter(b => b.active !== false);
-const bname = (id) => (A.cfg.barbers.find(b => b.id === id) || {}).name || "Usta";
+const barbers = () => A.cfg.barbers.filter(b => b.active);
+const B = (id) => A.cfg.barbers.find(b => b.id === id);
+const bname = (id) => (B(id) || {}).name || "Usta";
 function dayLong(d) { const n = nowTR().date; return (d === n ? "Bugün" : d === addDays(n, 1) ? "Yarın" : d === addDays(n, -1) ? "Dün" : DAYS_L[wd(d)]) + ", " + dnum(d) + " " + dmon(d); }
 function dshort(d) { const n = nowTR().date; return d === n ? "Bugün" : d === addDays(n, 1) ? "Yarın" : DAYS[wd(d)]; }
+function busyIv(barberId, d, ignore) {
+  const iv = [];
+  for (const b of A.bookings) if (b.date === d && b.barberId === barberId && OPEN.includes(b.status) && b.id !== ignore) iv.push([toMin(b.time), toMin(b.time) + b.dur]);
+  for (const b of A.blocks) if (b.date === d && b.barberId === barberId) iv.push([toMin(b.time), toMin(b.time) + b.dur]);
+  return iv;
+}
+function freeOpts(barberId, d, dur, ignore, cur) {
+  const b = B(barberId); if (!b) return `<option value="">Usta yok</option>`;
+  if (b.closed.includes(wd(d))) return `<option value="">Usta bu gün çalışmıyor</option>`;
+  const iv = busyIv(barberId, d, ignore), n = nowTR(), bs = toMin(b.breakStart), be = toMin(b.breakEnd), o = [];
+  for (let m = toMin(b.open); m + dur <= toMin(b.close); m += b.step) {
+    if (d < n.date || (d === n.date && m < n.min)) continue; if (bs < be && m < be && bs < m + dur) continue;
+    if (iv.some(([s, e]) => m < e && s < m + dur)) continue;
+    o.push(`<option value="${fmt(m)}" ${fmt(m) === cur ? "selected" : ""}>${fmt(m)}</option>`);
+  }
+  return o.join("") || `<option value="">Boş saat yok</option>`;
+}
 function vAgenda() {
   const n = nowTR(); if (!date) date = n.date;
   if (!owner()) filter = me.barberId || "all";
@@ -198,86 +212,74 @@ function vAgenda() {
   const fb = (x) => filter === "all" || x.barberId === filter;
   const day = A.bookings.filter(b => b.date === date && fb(b)).sort((a, b) => a.time.localeCompare(b.time));
   const blocks = A.blocks.filter(b => b.date === date && fb(b));
-  const act = day.filter(b => b.status !== "iptal");
-  const ciro = act.filter(b => b.status !== "gelmedi").reduce((s, b) => s + b.price, 0);
-  const closed = A.cfg.closed.includes(wd(date));
-  let items = [...day.map(b => ({ t: toMin(b.time), k: "b", b })), ...mergeBlocks(blocks).map(g => ({ t: g.s, k: "k", g }))];
-  if (filter !== "all" && !closed) {
-    const occ = items.filter(i => i.k === "k" || i.b.status !== "iptal").map(i => i.k === "b" ? [i.t, i.t + i.b.dur] : [i.g.s, i.g.e]).sort((a, b) => a[0] - b[0]);
-    let cur = toMin(A.cfg.open); const close = toMin(A.cfg.close);
-    if (date === n.date) cur = Math.max(cur, Math.ceil(n.min / 30) * 30); if (date < n.date) cur = close;
-    const bs = toMin(A.cfg.breakStart), be = toMin(A.cfg.breakEnd);
-    if (bs < be) occ.push([bs, be]); occ.sort((a, b) => a[0] - b[0]);
-    for (const [s, e] of occ) { if (s - cur >= 30) items.push({ t: cur, k: "g", s: cur, e: s }); cur = Math.max(cur, e); }
-    if (close - cur >= 30) items.push({ t: cur, k: "g", s: cur, e: close });
-    if (bs < be && bs >= (date === n.date ? n.min : 0) && date >= n.date) items.push({ t: bs, k: "br", s: bs, e: be });
+  const act = day.filter(b => OPEN.includes(b.status) || b.status === "geldi");
+  const ciro = day.filter(b => b.status === "onayli" || b.status === "geldi").reduce((s, b) => s + b.price, 0);
+  const fbar = filter !== "all" ? B(filter) : null;
+  const closed = fbar ? fbar.closed.includes(wd(date)) : barbers().every(b => b.closed.includes(wd(date)));
+  let items = [...day.map(b => ({ t: toMin(b.time), k: "b", b })), ...blocks.map(g => ({ t: toMin(g.time), k: "k", g }))];
+  if (fbar && !closed) {
+    const occ = items.filter(i => i.k === "k" || OPEN.includes(i.b.status)).map(i => i.k === "b" ? [i.t, i.t + i.b.dur] : [i.t, i.t + i.g.dur]);
+    let cur = toMin(fbar.open); const close = toMin(fbar.close);
+    if (date === n.date) cur = Math.max(cur, Math.ceil(n.min / 5) * 5); if (date < n.date) cur = close;
+    const bs = toMin(fbar.breakStart), be = toMin(fbar.breakEnd); if (bs < be) occ.push([bs, be]);
+    occ.sort((a, b) => a[0] - b[0]);
+    for (const [s, e] of occ) { if (s - cur >= fbar.step) items.push({ t: cur, k: "g", s: cur, e: s }); cur = Math.max(cur, e); }
+    if (close - cur >= fbar.step) items.push({ t: cur, k: "g", s: cur, e: close });
+    if (bs < be && date >= n.date) items.push({ t: bs, k: "br", s: bs, e: be });
   }
   items.sort((a, b) => a.t - b.t || (a.k === "g") - (b.k === "g"));
   const strip = Array.from({ length: 16 }, (_, i) => addDays(n.date, i - 1));
-  return `<div class="ph"><div><span class="lbl">${esc(dayLong(date))}${closed ? " · kapalı gün" : ""}</span><h1>${date === n.date ? "Bugün" : esc(dshort(date) + " " + dnum(date) + " " + dmon(date))}</h1></div>
+  return `<div class="ph"><div><span class="lbl">${esc(dayLong(date))}${closed ? " · kapalı" : ""}</span><h1>${date === n.date ? "Bugün" : esc(dshort(date) + " " + dnum(date) + " " + dmon(date))}</h1></div>
     <div class="acts"><button class="btn" data-act="newBook">+ Randevu</button><button class="btn light" data-act="newBlock">Saat kapat</button></div></div>
+  ${A.pending.length ? `<div class="inbox"><div class="h"><b>Onay bekleyen ${A.pending.length} talep</b><span class="soft small">Onaylayınca kesinleşir</span></div>
+    ${A.pending.slice(0, 20).map(p => `<div class="req"><span class="tm">${p.time}<small>${esc(dshort(p.date))} ${dnum(p.date)} ${dmon(p.date)}</small></span>
+      <div style="min-width:0"><b>${esc(p.name)}</b> <span class="soft small">· ${esc(p.serviceName)}${owner() && barbers().length > 1 ? " · " + esc(bname(p.barberId)) : ""} · ${ago(p.createdAt)}</span>${p.note ? `<div class="cn"><span class="band">${esc(p.note)}</span></div>` : ""}
+        ${rejectAsk === p.id ? `<div class="line" style="margin-top:8px"><label class="fld" for="rr-${p.id}"><span>Neden? <span class="soft">(isteğe bağlı)</span></span><input id="rr-${p.id}" maxlength="120" placeholder="Örn. o saatte doluyum"></label><button class="btn light sm" data-act="rejNo">Vazgeç</button><button class="btn danger sm" data-act="rejYes" data-id="${p.id}">Reddet</button></div>` : ""}</div>
+      <div class="q">${rejectAsk === p.id ? "" : `<button class="btn sm" data-act="approve" data-id="${p.id}">Onayla</button><button class="btn light sm" data-act="rejAsk" data-id="${p.id}">Reddet</button>`}</div></div>`).join("")}</div>` : ""}
   <div class="days">${strip.map(d => `<button class="day" data-act="day" data-v="${d}" aria-pressed="${d === date}">${A.counts[d] ? `<span class="cnt">${A.counts[d]}</span>` : ""}<span class="dn">${dshort(d)}</span><span class="dd">${dnum(d)}</span><span class="dm">${dmon(d)}</span></button>`).join("")}
     <label class="day" style="cursor:pointer" title="Başka gün"><span class="dn">Diğer</span><span class="dd">…</span><input type="date" id="pick" value="${date}" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Gün seç"></label></div>
   ${owner() && barbers().length > 1 ? `<div class="tgl" style="margin-top:8px"><button data-act="filter" data-v="all" aria-pressed="${filter === "all"}">Tüm ustalar</button>${barbers().map(b => `<button data-act="filter" data-v="${b.id}" aria-pressed="${filter === b.id}">${esc(b.name)}</button>`).join("")}</div>` : ""}
-  <div class="sum"><span><b>${act.length}</b> randevu</span><span><b>${day.filter(b => b.status === "geldi").length}</b> geldi</span><span><b>${day.filter(b => b.status === "bekliyor").length}</b> bekliyor</span><span><b>${tl(ciro)}</b> ciro</span>
-    <span class="soft">Son 7 gün ${A.stats.online7} online · gelmeme %${A.stats.noshow}</span></div>
+  <div class="sum"><span><b>${act.length}</b> randevu</span><span><b>${day.filter(b => b.status === "talep").length}</b> onay bekliyor</span><span><b>${day.filter(b => b.status === "geldi").length}</b> geldi</span><span><b>${tl(ciro)}</b> ciro</span>
+    <span class="soft">Son 7 gün ${A.stats.online7} online · gelmeme %${A.stats.noshow}</span>${fbar ? `<span class="soft">${fbar.step} dk dilim</span>` : ""}</div>
   <div class="list">${items.map(i => i.k === "b" ? rowB(i.b) : i.k === "k" ? rowK(i.g) : i.k === "br" ? `<div class="gap blk"><span class="mono">${fmt(i.s)}</span><span>Öğle arası · ${fmt(i.s)}–${fmt(i.e)}</span></div>` : `<div class="gap"><span class="mono">${fmt(i.s)}</span><span>Boş · ${fmt(i.s)}–${fmt(i.e)}</span></div>`).join("")
-    || `<div class="empty" style="margin-top:14px"><b>${closed ? "Kapalı gün." : "Randevu yok."}</b> ${owner() && filter === "all" && !closed ? "Boş aralıkları görmek için bir usta seç. " : ""}Müşteriler online aldıkça burada görünür; telefonla arayanları “+ Randevu” ile ekle.</div>`}</div>`;
+    || `<div class="empty" style="margin-top:14px"><b>${closed ? "Kapalı gün." : "Randevu yok."}</b> ${owner() && filter === "all" && !closed ? "Boş aralıkları görmek için bir usta seç. " : ""}Müşteriler online talep gönderdikçe yukarıda onayına düşer; telefonla arayanları “+ Randevu” ile ekle.</div>`}</div>`;
 }
-function mergeBlocks(list) {
-  const g = {}; for (const b of list) (g[b.barberId + "|" + (b.group || b.label)] ||= []).push(b);
-  const out = []; for (const arr of Object.values(g)) { arr.sort((a, b) => a.time.localeCompare(b.time)); let cur = null;
-    for (const b of arr) { const s = toMin(b.time); if (cur && cur.e === s) { cur.e = s + b.dur; cur.ids.push(b.id); } else { cur && out.push(cur); cur = { s, e: s + b.dur, ids: [b.id], label: b.label, barberId: b.barberId }; } } cur && out.push(cur); }
-  return out;
-}
-function rowK(g) { return `<div class="row blk"><span class="tm">${fmt(g.s)}<small>${fmt(g.e)}</small></span><div class="x"><b>${esc(g.label)}</b><span class="soft small">${owner() ? esc(bname(g.barberId)) + " · " : ""}Müşterilere kapalı</span></div><div class="q"><button class="btn light sm" data-act="unblock" data-v="${g.ids.join(",")}">Aç</button></div></div>`; }
+function rowK(g) { return `<div class="row blk"><span class="tm">${g.time}<small>${fmt(toMin(g.time) + g.dur)}</small></span><div class="x"><b>${esc(g.label)}</b><span class="soft small">${owner() ? esc(bname(g.barberId)) + " · " : ""}Müşterilere kapalı</span></div><div class="q"><button class="btn light sm" data-act="unblock" data-v="${g.id}">Aç</button></div></div>`; }
 function rowB(b) {
-  const open = openId === b.id, v = A.visits[b.phone] || 0;
-  const who = b.source === "online" ? "Online aldı" : `Telefon · ${esc(A.names[b.by] || "dükkân")} ekledi`;
+  const open = openId === b.id, v = A.visits[b.phone] || 0, live = OPEN.includes(b.status);
+  const who = b.source === "online" ? "Online talep" : `Telefon · ${esc(A.names[b.by] || "dükkân")} ekledi`;
   const wa = `https://wa.me/9${b.phone}?text=${encodeURIComponent(`Merhaba ${b.name}, ${A.cfg.shopName} randevunuz ${dayLong(b.date)} saat ${b.time}. Görüşmek üzere!`)}`;
+  const q = b.status === "talep" ? `<button class="btn sm" data-act="approve" data-id="${b.id}">Onayla</button><button class="btn light sm" data-act="open" data-v="${b.id}">Detay</button>`
+    : b.status === "onayli" ? `<button class="btn sm" data-act="st" data-id="${b.id}" data-v="geldi">Geldi</button><button class="btn light sm" data-act="st" data-id="${b.id}" data-v="gelmedi">Gelmedi</button>`
+    : b.status === "iptal" || b.status === "red" ? `<button class="btn light sm" data-act="restore" data-id="${b.id}">Geri al</button>` : `<button class="btn light sm" data-act="st" data-id="${b.id}" data-v="onayli">Geri al</button>`;
   return `<div class="row ${b.status}"><span class="tm">${b.time}<small>${fmt(toMin(b.time) + b.dur)}</small></span>
-    <div class="x" data-act="open" data-v="${b.id}"><div><b>${esc(b.name)}</b> <span class="tag ${b.status}">${ST[b.status]}</span>${v === 0 && b.status !== "iptal" ? ` <span class="tag mut">Yeni</span>` : v > 1 ? ` <span class="tag mut">${v}. ziyaret</span>` : ""}</div>
-      <span class="soft small">${esc(b.serviceName)} · ${tl(b.price)}${owner() && filter === "all" ? " · " + esc(bname(b.barberId)) : ""} · ${who} ${ago(b.createdAt)}</span>
+    <div class="x" data-act="open" data-v="${b.id}"><div><b>${esc(b.name)}</b> <span class="tag ${TAG[b.status]}">${ST[b.status]}</span>${v === 0 && live ? ` <span class="tag mut">Yeni</span>` : v > 1 ? ` <span class="tag mut">${v}. ziyaret</span>` : ""}</div>
+      <span class="soft small">${esc(b.serviceName)} · ${tl(b.price)}${owner() && filter === "all" ? " · " + esc(bname(b.barberId)) : ""} · ${who} ${ago(b.createdAt)}${live && b.date >= nowTR().date ? " · " + until(b.date, b.time) : ""}</span>
       ${b.note ? `<span class="cn">Not: <span class="band">${esc(b.note)}</span></span>` : ""}${b.staffNote ? `<span class="sn">${esc(b.staffNote)}</span>` : ""}</div>
-    <div class="q">${b.status === "bekliyor" ? `<button class="btn sm" data-act="st" data-id="${b.id}" data-v="geldi">Geldi</button><button class="btn light sm" data-act="st" data-id="${b.id}" data-v="gelmedi">Gelmedi</button>`
-      : b.status === "iptal" ? `<button class="btn light sm" data-act="restore" data-id="${b.id}">Geri al</button>` : `<button class="btn light sm" data-act="st" data-id="${b.id}" data-v="bekliyor">Geri al</button>`}</div>
+    <div class="q">${q}</div>
     ${open ? `<div class="det">
-      <div class="line"><a class="btn light sm" href="tel:${b.phone}">Ara · ${esc(pretty(b.phone))}</a><a class="btn light sm" href="${wa}" target="_blank" rel="noopener">WhatsApp hatırlatma</a></div>
+      <div class="line"><a class="btn light sm" href="tel:${b.phone}">Ara · ${esc(pretty(b.phone))}</a><a class="btn light sm" href="${wa}" target="_blank" rel="noopener">WhatsApp mesajı</a></div>
       <label class="fld" for="sn-${b.id}"><span>Usta notu <span class="soft">(müşteri görmez)</span></span><textarea id="sn-${b.id}" maxlength="300" placeholder="Örn. 3 numara, kare sakal">${esc(b.staffNote)}</textarea></label>
       <div><button class="btn light sm" data-act="note" data-id="${b.id}">Notu kaydet</button></div>
-      ${b.status !== "iptal" ? `<div class="line"><label class="fld" for="mvD-${b.id}"><span>Yeni gün</span><input type="date" id="mvD-${b.id}" value="${b.date}" min="${nowTR().date}" data-mv="${b.id}"></label>
+      ${live ? `<div class="line"><label class="fld" for="mvD-${b.id}"><span>Yeni gün</span><input type="date" id="mvD-${b.id}" value="${b.date}" min="${nowTR().date}" data-mv="${b.id}"></label>
         <label class="fld" for="mvT-${b.id}"><span>Yeni saat</span><select id="mvT-${b.id}">${freeOpts(b.barberId, b.date, b.dur, b.id, b.time)}</select></label><button class="btn sm" data-act="move" data-id="${b.id}">Taşı</button></div>
-      ${cancelAsk === b.id ? `<div class="line"><span style="font-weight:600;align-self:center">İptal edilsin mi?</span><button class="btn light sm" data-act="cancelNo">Vazgeç</button><button class="btn danger sm" data-act="cancelYes" data-id="${b.id}">Evet, iptal et</button></div>` : `<div><button class="btn danger sm" data-act="cancelAsk" data-id="${b.id}">Randevuyu iptal et</button></div>`}` : `<span class="soft small">İptal eden: ${b.cancelledBy === "musteri" ? "müşteri" : "dükkân"}</span>`}
+      ${cancelAsk === b.id ? `<div class="line"><span style="font-weight:600;align-self:center">İptal edilsin mi?</span><button class="btn light sm" data-act="cancelNo">Vazgeç</button><button class="btn danger sm" data-act="cancelYes" data-id="${b.id}">Evet, iptal et</button></div>` : `<div><button class="btn danger sm" data-act="cancelAsk" data-id="${b.id}">Randevuyu iptal et</button></div>`}`
+      : `<span class="soft small">${b.status === "red" ? "Reddedildi" + (b.rejectReason ? ": " + esc(b.rejectReason) : "") : b.status === "iptal" ? "İptal eden: " + (b.closedBy === "musteri" ? "müşteri" : "dükkân") : ""}</span>`}
       ${b.history && b.history.length ? `<span class="soft small">Taşındı: ${b.history.map(h => esc(h.from.slice(5) + " → " + h.to.slice(5))).join(", ")}</span>` : ""}
     </div>` : ""}</div>`;
 }
-function busySet(barberId, d, ignore) {
-  const s = new Set();
-  for (const b of A.bookings) if (b.date === d && b.barberId === barberId && b.status !== "iptal" && b.id !== ignore) for (let m = toMin(b.time); m < toMin(b.time) + b.dur; m += 30) s.add(m);
-  for (const b of A.blocks) if (b.date === d && b.barberId === barberId) s.add(toMin(b.time));
-  return s;
-}
-function freeOpts(barberId, d, dur, ignore, cur) {
-  const c = A.cfg; if (c.closed.includes(wd(d))) return `<option value="">Kapalı gün</option>`;
-  const set = busySet(barberId, d, ignore), n = nowTR(), bs = toMin(c.breakStart), be = toMin(c.breakEnd), o = [];
-  for (let m = toMin(c.open); m + dur <= toMin(c.close); m += 30) {
-    if (d < n.date || (d === n.date && m < n.min)) continue; if (bs < be && m < be && bs < m + dur) continue;
-    let ok = true; for (let x = m; x < m + dur; x += 30) if (set.has(x)) ok = false;
-    if (ok) o.push(`<option value="${fmt(m)}" ${fmt(m) === cur ? "selected" : ""}>${fmt(m)}</option>`);
-  }
-  return o.join("") || `<option value="">Boş saat yok</option>`;
-}
 
-/* ---------- sheets: new booking / block ---------- */
+/* ---------- sheets ---------- */
 function renderSheet() {
   const w = $("sheet");
   if (!sheet) { w.innerHTML = ""; document.body.style.overflow = ""; if (pending) render(); return; }
   document.body.style.overflow = "hidden";
   const c = A.cfg, bs = owner() ? barbers() : barbers().filter(b => b.id === me.barberId);
+  if (sheet.barber !== "all" && !bs.some(b => b.id === sheet.barber)) sheet.barber = (bs[0] || {}).id;
   if (sheet.kind === "book") {
+    if (sheet.barber === "all") sheet.barber = (bs[0] || {}).id;
     const s = c.services.find(x => x.id === sheet.svc) || c.services[0]; sheet.svc = s.id;
-    if (!bs.some(b => b.id === sheet.barber)) sheet.barber = (bs[0] || {}).id;
-    w.innerHTML = `<div class="scrim" data-act="close"><form class="sheet" id="bf" novalidate><h2>Randevu <span class="band">ekle</span></h2>
+    w.innerHTML = `<div class="scrim" data-act="close"><form class="sheet" id="bf" novalidate><h2>Randevu <span class="band">ekle</span></h2><p class="soft small" style="margin:-8px 0 0">Telefonla ya da dükkânda alınan randevular doğrudan onaylı kaydedilir.</p>
       <div class="grid2">
         <label class="fld" for="bSvc"><span>Hizmet</span><select id="bSvc" data-re>${c.services.map(x => `<option value="${x.id}" ${x.id === s.id ? "selected" : ""}>${esc(x.name)} · ${x.dur} dk · ${tl(x.price)}</option>`).join("")}</select></label>
         ${bs.length > 1 ? `<label class="fld" for="bBar"><span>Usta</span><select id="bBar" data-re>${bs.map(b => `<option value="${b.id}" ${b.id === sheet.barber ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label>` : ""}
@@ -290,13 +292,14 @@ function renderSheet() {
       <div class="acts"><button type="button" class="btn light" data-act="close">Vazgeç</button><button class="btn" type="submit" ${busy ? "disabled" : ""}>${busy ? "Kaydediliyor…" : "Kaydet"}</button></div></form></div>`;
     $("bf").onsubmit = (e) => { e.preventDefault(); saveBook(); };
   } else {
-    const opts = []; for (let m = toMin(c.open); m <= toMin(c.close); m += 30) opts.push(fmt(m));
+    const b = B(sheet.barber) || { open: c.open, close: c.close };
+    const opts = []; for (let m = toMin(b.open); m <= toMin(b.close); m += 5) opts.push(fmt(m));
     w.innerHTML = `<div class="scrim" data-act="close"><form class="sheet" id="kf" novalidate><h2>Saat <span class="band">kapat</span></h2><p class="soft" style="margin:0">Mola, izin ya da dışarıdaki iş için. Bu aralık müşterilere dolu görünür.</p>
       <div class="grid2">
-        ${owner() ? `<label class="fld" for="kBar"><span>Usta</span><select id="kBar"><option value="all">Tüm ustalar</option>${bs.map(b => `<option value="${b.id}" ${b.id === filter ? "selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label>` : ""}
+        ${owner() ? `<label class="fld" for="kBar"><span>Usta</span><select id="kBar" data-re><option value="all" ${sheet.barber === "all" ? "selected" : ""}>Tüm ustalar</option>${bs.map(x => `<option value="${x.id}" ${x.id === sheet.barber ? "selected" : ""}>${esc(x.name)}</option>`).join("")}</select></label>` : ""}
         <label class="fld" for="kDate"><span>Gün</span><input type="date" id="kDate" value="${sheet.date}" min="${nowTR().date}"></label>
         <label class="fld" for="kFrom"><span>Başlangıç</span><select id="kFrom">${opts.slice(0, -1).map(o => `<option>${o}</option>`).join("")}</select></label>
-        <label class="fld" for="kTo"><span>Bitiş</span><select id="kTo">${opts.slice(1).map((o, i) => `<option ${i === 1 ? "selected" : ""}>${o}</option>`).join("")}</select></label>
+        <label class="fld" for="kTo"><span>Bitiş</span><select id="kTo">${opts.slice(1).map((o, i) => `<option ${i === 11 ? "selected" : ""}>${o}</option>`).join("")}</select></label>
         <label class="fld" for="kLabel" style="grid-column:1/-1"><span>Açıklama</span><input id="kLabel" maxlength="40" value="Mola"></label>
       </div>${sheet.err ? `<div class="err">${esc(sheet.err)}</div>` : ""}
       <div class="acts"><button type="button" class="btn light" data-act="close">Vazgeç</button><button class="btn" type="submit" ${busy ? "disabled" : ""}>Kapat</button></div></form></div>`;
@@ -313,8 +316,8 @@ async function saveBook() {
 }
 async function saveBlock() {
   busy = true;
-  try { const r = await call("/api/staff?action=block", { barberId: owner() ? $("kBar").value : me.barberId, date: $("kDate").value, from: $("kFrom").value, to: $("kTo").value, label: $("kLabel").value, group: Math.random().toString(36).slice(2, 8) });
-    busy = false; date = $("kDate").value; sheet = null; renderSheet(); toast(r.skipped ? `Kapatıldı · ${r.skipped} dolu saat atlandı` : "Saat kapatıldı"); await loadAgenda(true);
+  try { const bid = owner() ? $("kBar").value : me.barberId; const r = await call("/api/staff?action=block", { barberId: bid, date: $("kDate").value, from: $("kFrom").value, to: $("kTo").value, label: $("kLabel").value });
+    busy = false; date = $("kDate").value; sheet = null; renderSheet(); toast(r.skipped ? "Kapatıldı · dolu dakikalar atlandı" : "Saat kapatıldı"); await loadAgenda(true);
   } catch (e) { busy = false; sheet.err = e.message; renderSheet(); }
 }
 
@@ -324,44 +327,95 @@ function vCust() {
   const q = custQ.trim().toLocaleLowerCase("tr-TR"), qd = q.replace(/\D/g, "");
   const list = customers.filter(c => !q || c.name.toLocaleLowerCase("tr-TR").includes(q) || (qd && c.phone.includes(qd))).sort((a, b) => (b.next ? 1 : 0) - (a.next ? 1 : 0) || b.visits - a.visits || a.name.localeCompare(b.name, "tr"));
   return `<div class="ph"><div><span class="lbl">${customers.length} müşteri</span><h1>Müşteriler</h1></div></div>
-    <label class="fld" for="cq" style="max-width:420px"><span class="sr" hidden>Ara</span><input id="cq" type="search" placeholder="İsim ya da telefon ara" value="${esc(custQ)}"></label>
+    <label class="fld" for="cq" style="max-width:420px"><input id="cq" type="search" placeholder="İsim ya da telefon ara" value="${esc(custQ)}" aria-label="Müşteri ara"></label>
     <div class="list" style="margin-top:8px">${list.map(c => `<div class="cust"><div><b>${esc(c.name)}</b><div class="soft small"><a href="tel:${c.phone}" class="mono" style="text-decoration:none">${esc(pretty(c.phone))}</a>${c.note ? " · " + esc(c.note) : ""}</div></div>
       <div class="r"><b class="mono">${c.visits}</b> ziyaret${c.noshow ? ` · <span style="color:var(--warn)">${c.noshow} gelmedi</span>` : ""}<div class="soft">${tl(c.spent)}${c.last ? " · son " + dnum(c.last) + " " + dmon(c.last) : ""}</div>${c.next ? `<div><span class="tag bekliyor">${esc(dshort(c.next.slice(0, 10)) + " " + c.next.slice(11))}</span></div>` : ""}</div></div>`).join("")
       || `<div class="empty">${q ? "Aramaya uyan müşteri yok." : "<b>Henüz müşteri yok.</b> Randevular geldikçe burası kendiliğinden dolar."}</div>`}</div>`;
 }
 
+/* ---------- barber hours (own page for ustas, inside Ustalar for the owner) ---------- */
+function hoursForm(b, prefix) {
+  const hrs = []; for (let m = 360; m <= 1430; m += 10) hrs.push(fmt(m));
+  const sel = (id, v, empty) => `<select id="${id}">${empty ? `<option value="">${empty}</option>` : ""}${hrs.map(h => `<option ${h === v ? "selected" : ""}>${h}</option>`).join("")}</select>`;
+  const own = b.ownHours;
+  return `<div class="grid2">
+      <label class="fld" for="${prefix}step"><span>Randevu dilimi</span><select id="${prefix}step">${STEPS.map(s => `<option value="${s}" ${b.step === s ? "selected" : ""}>${s} dakikada bir</option>`).join("")}</select></label>
+      <label class="fld" for="${prefix}title"><span>Unvan <span class="soft">(müşteri görür)</span></span><input id="${prefix}title" maxlength="40" value="${esc(b.title || "")}" placeholder="Örn. Sakal ustası"></label></div>
+    <label class="switch"><input type="checkbox" id="${prefix}own" ${own ? "checked" : ""} data-own="${prefix}"> Kendi çalışma saatlerim var</label>
+    <div id="${prefix}hrs" ${own ? "" : "hidden"} class="sec" style="padding:0">
+      <div class="grid2"><label class="fld" for="${prefix}open"><span>Başlangıç</span>${sel(prefix + "open", b.open)}</label><label class="fld" for="${prefix}close"><span>Bitiş</span>${sel(prefix + "close", b.close)}</label>
+        <label class="fld" for="${prefix}bs"><span>Öğle arası başı</span>${sel(prefix + "bs", b.breakStart, "Ara yok")}</label><label class="fld" for="${prefix}be"><span>Öğle arası sonu</span>${sel(prefix + "be", b.breakEnd, "Ara yok")}</label></div>
+      <div class="fld"><span>İzinli günler</span><div class="tgl" id="${prefix}closed">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button type="button" data-act="hday" data-v="${d}" aria-pressed="${b.closed.includes(d)}">${DAYS_L[d]}</button>`).join("")}</div></div></div>
+    ${own ? "" : `<p class="soft small" style="margin:0">Kapalıyken dükkânın saatleri geçerli: ${esc(A.cfg.open)}–${esc(A.cfg.close)}.</p>`}`;
+}
+function readHours(prefix, barberId) {
+  const v = (k) => ($(prefix + k) || {}).value;
+  const own = $(prefix + "own").checked;
+  const closed = [...document.querySelectorAll(`#${prefix}closed [aria-pressed="true"]`)].map(x => +x.dataset.v);
+  return { barberId, step: +v("step"), title: v("title"), ownHours: own, ...(own ? { open: v("open"), close: v("close"), breakStart: v("bs"), breakEnd: v("be"), closed } : {}) };
+}
+function vHours(barberId, standalone, list) {
+  const b = (list || A.cfg.barbers).find(x => x.id === barberId);
+  if (!b) return `<div class="empty" style="margin-top:24px">Bu hesaba bağlı bir koltuk yok.</div>`;
+  return `${standalone ? `<div class="ph"><div><span class="lbl">Müşteriler bu saatlere göre yer seçer</span><h1>Saatlerim</h1></div></div>` : ""}
+    <form class="sec" id="hf-${b.id}" data-hf="${b.id}" novalidate style="max-width:560px;${standalone ? "" : "padding-top:0"}">${hoursForm(b, "h" + b.id + "_")}
+      <div><button class="btn" type="submit">Saatleri kaydet</button></div></form>`;
+}
+
 /* ---------- team (owner) ---------- */
 function vTeam() {
   if (!team) { call("/api/admin?action=team").then(r => { team = r; render(true); }).catch(e => toast(e.message)); return `<p class="soft" style="padding-top:24px">Yükleniyor…</p>`; }
-  const meU = team.users.find(u => u.username === me.username) || {};
-  const chairOn = !!(meU.barberId && (team.barbers.find(b => b.id === meU.barberId) || {}).active !== false);
-  return `<div class="ph"><div><span class="lbl">${team.users.length} hesap</span><h1>Ekip</h1></div></div>
-    <div class="note" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span><b>Ben de müşteri alıyorum</b><br>Açıksa müşteriler seni de usta olarak seçebilir.</span><button class="btn ${chairOn ? "" : "light"} sm" data-act="chair" data-v="${chairOn ? 0 : 1}">${chairOn ? "Açık" : "Kapalı"}</button></div>
-    <div class="list" style="margin-top:12px">${team.users.map(u => `<div class="member"><div><b>${esc(u.name)}</b> ${u.role === "sahip" ? `<span class="tag mut">Sahip</span>` : ""}${u.disabled ? ` <span class="tag iptal">Kapalı</span>` : ""}<div class="soft small mono">${esc(u.username)}</div></div>
-      ${u.username !== me.username ? `<div class="ops"><label class="fld" for="pw-${esc(u.username)}"><span>Yeni şifre</span><input id="pw-${esc(u.username)}" type="text" autocomplete="off" placeholder="En az 8 karakter"></label>
-        <button class="btn light sm" data-act="resetPw" data-v="${esc(u.username)}">Şifreyi değiştir</button><button class="btn light sm" data-act="toggleU" data-v="${esc(u.username)}" data-d="${u.disabled ? 0 : 1}">${u.disabled ? "Hesabı aç" : "Hesabı kapat"}</button>
-        <button class="btn danger sm" data-act="delU" data-v="${esc(u.username)}">Sil</button></div>` : ""}</div>`).join("")}</div>
-    <form class="sec" id="addF" novalidate><h2>Usta ekle</h2><div class="grid2">
-      <label class="fld" for="aName"><span>Ad</span><input id="aName" maxlength="40" placeholder="Örn. Emre"></label>
-      <label class="fld" for="aUser"><span>Kullanıcı adı</span><input id="aUser" autocapitalize="none" placeholder="emre"></label>
-      <label class="fld" for="aPass"><span>Geçici şifre</span><input id="aPass" type="text" value="${genPw()}"></label></div>
-      <div><button class="btn" type="submit">Ustayı ekle</button></div><p class="soft small" style="margin:0">Kullanıcı adını ve şifreyi ustaya ilet; giriş yaptıktan sonra Hesabım'dan şifresini değiştirebilir. Usta sadece kendi randevularını görür.</p></form>`;
+  const meChair = team.barbers.find(b => b.id === me.barberId);
+  return `<div class="ph"><div><span class="lbl">${team.barbers.filter(b => b.active).length} usta randevu alıyor</span><h1>Ustalar</h1></div><div class="acts"><button class="btn" data-act="addOpen">+ Usta ekle</button></div></div>
+    ${editB === "new" ? addForm() : ""}
+    <div class="note" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px"><span><b>Ben de müşteri alıyorum</b><br>Açıksa müşteriler seni de usta olarak seçebilir.</span><button class="btn ${meChair && meChair.active ? "" : "light"} sm" data-act="chair" data-v="${meChair && meChair.active ? 0 : 1}">${meChair && meChair.active ? "Açık" : "Kapalı"}</button></div>
+    <div class="cards">${team.barbers.map((b, i) => bCard(b, i)).join("") || `<div class="empty"><b>Henüz usta yok.</b> “+ Usta ekle” ile ilk koltuğu oluştur ya da kendi koltuğunu aç.</div>`}</div>`;
+}
+function bCard(b, i) {
+  const open = editB === b.id, l = b.login;
+  return `<div class="bc ${b.active ? "" : "off"}"><div class="hd"><span class="av" style="background:${COLORS[i % COLORS.length]}">${esc(ini(b.name))}</span>
+      <b>${esc(b.name)}${b.id === me.barberId ? ' <span class="tag mut">Sen</span>' : ""}${b.active ? "" : ' <span class="tag iptal">Gizli</span>'}</b>
+      <button class="btn light sm" data-act="editB" data-v="${b.id}" style="grid-row:span 2">${open ? "Kapat" : "Düzenle"}</button>
+      <span class="soft small">${b.title ? esc(b.title) + " · " : ""}${b.step} dk dilim · ${esc(b.open)}–${esc(b.close)}${b.closed.length ? " · " + b.closed.map(d => DAYS[d]).join(", ") + " izinli" : ""} · ${l ? "giriş: <span class='mono'>" + esc(l.username) + "</span>" + (l.disabled ? " (kapalı)" : "") : "giriş hesabı yok"}</span></div>
+    ${open ? `<form class="line" data-rename="${b.id}" novalidate><label class="fld" for="bn-${b.id}"><span>Ad</span><input id="bn-${b.id}" maxlength="40" value="${esc(b.name)}"></label><button class="btn light sm" type="submit">Adı kaydet</button></form>
+      ${vHours(b.id, false, team.barbers)}
+      <div class="sec" style="padding-top:6px"><h2 style="font-size:1.2rem">Giriş hesabı</h2>
+        ${l ? `<div class="line"><label class="fld" for="pw-${b.id}"><span>Yeni şifre <span class="soft">(${esc(l.username)})</span></span><input id="pw-${b.id}" type="text" autocomplete="off" placeholder="En az 8 karakter"></label><button class="btn light sm" data-act="resetPw" data-v="${b.id}">Şifreyi değiştir</button>
+            ${l.role !== "sahip" ? `<button class="btn light sm" data-act="toggleLogin" data-v="${b.id}" data-d="${l.disabled ? 0 : 1}">${l.disabled ? "Girişi aç" : "Girişi kapat"}</button>` : ""}</div>`
+          : `<div class="line"><label class="fld" for="lu-${b.id}"><span>Kullanıcı adı</span><input id="lu-${b.id}" autocapitalize="none" placeholder="usta"></label><label class="fld" for="lp-${b.id}"><span>Şifre</span><input id="lp-${b.id}" type="text" value="${genPw()}"></label><button class="btn light sm" data-act="giveLogin" data-v="${b.id}">Giriş hesabı ver</button></div>`}
+      </div>
+      ${b.id !== me.barberId ? `<div class="line" style="border-top:1px solid var(--hair);padding-top:12px"><button class="btn light sm" data-act="hideB" data-v="${b.id}" data-d="${b.active ? 0 : 1}">${b.active ? "Müşterilerden gizle" : "Yeniden göster"}</button><button class="btn danger sm" data-act="delB" data-v="${b.id}">Ustayı sil</button></div>` : ""}` : ""}
+  </div>`;
+}
+function addForm() {
+  return `<form class="bc" id="addF" novalidate style="margin-bottom:12px"><h2 style="font-size:1.4rem">Yeni usta</h2>
+    <div class="grid2"><label class="fld" for="aName"><span>Ad</span><input id="aName" maxlength="40" placeholder="Örn. Emre"></label>
+      <label class="fld" for="aTitle"><span>Unvan <span class="soft">(isteğe bağlı)</span></span><input id="aTitle" maxlength="40" placeholder="Örn. Sakal ustası"></label>
+      <label class="fld" for="aStep"><span>Randevu dilimi</span><select id="aStep">${STEPS.map(s => `<option value="${s}" ${s === 30 ? "selected" : ""}>${s} dakikada bir</option>`).join("")}</select></label></div>
+    <label class="switch"><input type="checkbox" id="aLogin" checked> Ustaya giriş hesabı ver <span class="soft" style="font-weight:400">(kendi ajandasını görür, talepleri onaylar)</span></label>
+    <div class="grid2" id="aLoginF"><label class="fld" for="aUser"><span>Kullanıcı adı</span><input id="aUser" autocapitalize="none" placeholder="emre"></label><label class="fld" for="aPass"><span>Geçici şifre</span><input id="aPass" type="text" value="${genPw()}"></label></div>
+    <div class="acts"><button type="button" class="btn light" data-act="addClose">Vazgeç</button><button class="btn" type="submit">Ustayı ekle</button></div>
+    <p class="soft small" style="margin:0">Ustaya dükkân kodunu (<span class="mono">${esc(shopSlug)}</span>), kullanıcı adını ve şifreyi ilet; /usta adresinden girer.</p></form>`;
 }
 function genPw() { const a = "abcdefghjkmnpqrstuvwxyz23456789"; return Array.from(crypto.getRandomValues(new Uint8Array(10)), x => a[x % a.length]).join(""); }
 
 /* ---------- settings (owner) ---------- */
+const cfgBase = () => { const { barbers, ...rest } = A.cfg; return { ...JSON.parse(JSON.stringify(rest)), slug: shopSlug }; };
 function vSettings() {
-  const c = draft || (draft = JSON.parse(JSON.stringify(A.cfg)));
-  const hrs = []; for (let m = 360; m <= 1410; m += 30) hrs.push(fmt(m));
+  const c = draft || (draft = cfgBase());
+  const hrs = []; for (let m = 360; m <= 1430; m += 30) hrs.push(fmt(m));
   const sel = (id, v, empty) => `<select id="${id}">${empty ? `<option value="">${empty}</option>` : ""}${hrs.map(h => `<option ${h === v ? "selected" : ""}>${h}</option>`).join("")}</select>`;
-  const changed = JSON.stringify(c) !== JSON.stringify(A.cfg);
   const opt = (id, v, list) => `<select id="${id}">${list.map(([x, l]) => `<option value="${x}" ${+v === x ? "selected" : ""}>${l}</option>`).join("")}</select>`;
+  const link = location.origin + "/" + shopSlug;
   return `<div class="ph"><div><span class="lbl">Müşteri sayfasında görünür</span><h1>Ayarlar</h1></div></div>
+    <div class="linkbox"><span class="soft small">Müşteri bağlantın</span><span class="mono">${esc(link)}</span><button class="btn light sm" data-act="copy" data-v="${esc(link)}">Kopyala</button><a class="btn light sm" href="/${esc(shopSlug)}" target="_blank" rel="noopener">Aç</a></div>
     <div class="sec"><h2>Dükkân</h2><div class="grid2">
-      <label class="fld" for="cShop"><span>Dükkân adı</span><input id="cShop" maxlength="40" value="${esc(c.shopName)}" data-c></label>
-      <label class="fld" for="cAddr"><span>Adres</span><input id="cAddr" maxlength="90" value="${esc(c.address)}" placeholder="Mahalle, sokak, ilçe" data-c></label>
-      <label class="fld" for="cPhone"><span>Telefon</span><input id="cPhone" maxlength="20" type="tel" value="${esc(c.phone)}" placeholder="0216 xxx xx xx" data-c></label></div></div>
-    <div class="sec"><h2>Çalışma saatleri</h2><div class="grid2">
+      <label class="fld" for="cShop"><span>Dükkân adı</span><input id="cShop" maxlength="40" value="${esc(c.shopName)}"></label>
+      <label class="fld" for="cSlug"><span>Bağlantı adı</span><input id="cSlug" maxlength="30" autocapitalize="none" value="${esc(c.slug)}"></label>
+      <label class="fld" for="cAddr"><span>Adres</span><input id="cAddr" maxlength="90" value="${esc(c.address)}" placeholder="Mahalle, sokak, ilçe"></label>
+      <label class="fld" for="cPhone"><span>Telefon</span><input id="cPhone" maxlength="20" type="tel" value="${esc(c.phone)}" placeholder="0216 xxx xx xx"></label></div>
+      <p class="soft small" style="margin:0">Bağlantı adını değiştirirsen eski bağlantı çalışmaz; yenisini müşterilerinle paylaş.</p></div>
+    <div class="sec"><h2>Dükkân saatleri</h2><p class="soft small" style="margin:-6px 0 0">Kendi saatini ayarlamayan ustalar bu saatlerle çalışır.</p><div class="grid2">
       <label class="fld" for="cOpen"><span>Açılış</span>${sel("cOpen", c.open)}</label><label class="fld" for="cClose"><span>Kapanış</span>${sel("cClose", c.close)}</label>
       <label class="fld" for="cBs"><span>Öğle arası başı</span>${sel("cBs", c.breakStart, "Ara yok")}</label><label class="fld" for="cBe"><span>Öğle arası sonu</span>${sel("cBe", c.breakEnd, "Ara yok")}</label></div>
       <div class="fld"><span>Kapalı günler</span><div class="tgl">${[1, 2, 3, 4, 5, 6, 0].map(d => `<button data-act="closed" data-v="${d}" aria-pressed="${c.closed.includes(d)}">${DAYS_L[d]}</button>`).join("")}</div></div></div>
@@ -369,25 +423,29 @@ function vSettings() {
       <label class="fld" for="cHor"><span>Kaç gün ilerisi açık</span>${opt("cHor", c.horizon, [[7, "7 gün"], [14, "14 gün"], [21, "21 gün"], [30, "30 gün"]])}</label>
       <label class="fld" for="cMin"><span>En geç ne kadar önce alınır</span>${opt("cMin", c.minNotice, [[0, "Son ana kadar"], [30, "30 dk önce"], [60, "1 saat önce"], [120, "2 saat önce"], [240, "4 saat önce"]])}</label>
       <label class="fld" for="cCan"><span>Müşteri en geç ne zaman iptal eder</span>${opt("cCan", c.cancelHours, [[0, "Son ana kadar"], [1, "1 saat önce"], [2, "2 saat önce"], [6, "6 saat önce"], [24, "1 gün önce"]])}</label></div></div>
-    <div class="sec"><h2>Hizmetler</h2>${c.services.map(s => `<div class="erow"><input aria-label="Hizmet adı" id="sN-${s.id}" maxlength="40" value="${esc(s.name)}" data-c>
-      <select aria-label="Süre" id="sD-${s.id}">${[30, 60, 90, 120].map(d => `<option value="${d}" ${s.dur === d ? "selected" : ""}>${d} dk</option>`).join("")}</select>
-      <input aria-label="Fiyat (TL)" id="sP-${s.id}" type="number" min="0" step="10" value="${s.price}" data-c><button class="xb" data-act="delSvc" data-v="${s.id}" aria-label="${esc(s.name)} sil">×</button></div>`).join("")}
+    <div class="sec"><h2>Hizmetler</h2>${c.services.map(s => `<div class="erow"><input aria-label="Hizmet adı" id="sN-${s.id}" maxlength="40" value="${esc(s.name)}">
+      <select aria-label="Süre" id="sD-${s.id}">${DURS.map(d => `<option value="${d}" ${s.dur === d ? "selected" : ""}>${d} dk</option>`).join("")}</select>
+      <input aria-label="Fiyat (TL)" id="sP-${s.id}" type="number" min="0" step="10" value="${s.price}"><button class="xb" data-act="delSvc" data-v="${s.id}" aria-label="${esc(s.name)} sil">×</button></div>`).join("")}
       <div><button class="btn light sm" data-act="addSvc">+ Hizmet ekle</button></div></div>
-    ${saveBar(changed)}`;
+    ${saveBar(JSON.stringify(c) !== JSON.stringify(cfgBase()))}`;
 }
-function saveBar(changed) { return `<div class="savebar" id="saveBar"><span>${changed ? "Kaydedilmemiş değişiklik var" : "Ayarlar güncel"}</span><span class="acts" style="flex:none">${changed ? `<button class="btn light sm" data-act="resetCfg" style="box-shadow:inset 0 0 0 1.5px var(--on-band);color:var(--on-band)">Geri al</button>` : ""}<button class="btn sm" data-act="saveCfg" ${changed ? "" : "disabled"}>Kaydet</button></span></div>`; }
-function updateSaveBar() { const b = $("saveBar"); if (b) b.outerHTML = saveBar(JSON.stringify(draft) !== JSON.stringify(A.cfg)); }
+function saveBar(changed) { return `<div class="savebar" id="saveBar" data-changed="${changed ? 1 : 0}"><span>${changed ? "Kaydedilmemiş değişiklik var" : "Ayarlar güncel"}</span><span class="acts" style="flex:none">${changed ? `<button class="btn light sm" data-act="resetCfg" style="box-shadow:inset 0 0 0 1.5px var(--on-band);color:var(--on-band)">Geri al</button>` : ""}<button class="btn sm" data-act="saveCfg" ${changed ? "" : "disabled"}>Kaydet</button></span></div>`; }
+// Only redraw the bar when its state flips, so a click on "Kaydet" that blurs a field is not lost.
+function updateSaveBar() { const b = $("saveBar"); const ch = JSON.stringify(draft) !== JSON.stringify(cfgBase()); if (b && b.dataset.changed !== (ch ? "1" : "0")) b.outerHTML = saveBar(ch); }
 function readDraft() {
   if (!draft || !$("cShop")) return; const v = (i) => $(i).value;
-  Object.assign(draft, { shopName: v("cShop"), address: v("cAddr"), phone: v("cPhone"), open: v("cOpen"), close: v("cClose"), breakStart: v("cBs"), breakEnd: v("cBe"), horizon: +v("cHor"), minNotice: +v("cMin"), cancelHours: +v("cCan") });
-  draft.services.forEach(s => { s.name = v("sN-" + s.id); s.dur = +v("sD-" + s.id); s.price = Math.max(0, Math.round(+v("sP-" + s.id) || 0)); });
+  Object.assign(draft, { shopName: v("cShop"), slug: v("cSlug").trim().toLowerCase(), address: v("cAddr"), phone: v("cPhone"), open: v("cOpen"), close: v("cClose"), breakStart: v("cBs"), breakEnd: v("cBe"), horizon: +v("cHor"), minNotice: +v("cMin"), cancelHours: +v("cCan") });
+  draft.services.forEach(s => { if ($("sN-" + s.id)) { s.name = v("sN-" + s.id); s.dur = +v("sD-" + s.id); s.price = Math.max(0, Math.round(+v("sP-" + s.id) || 0)); } });
 }
 
 /* ---------- account ---------- */
 function vAccount() {
-  return `<div class="ph"><div><span class="lbl">${me.role === "sahip" ? "Dükkân sahibi" : "Usta"}</span><h1>${esc(me.name)}</h1></div></div>
-    <div class="rows" style="max-width:480px"><div><span>Kullanıcı adı</span><span class="mono">${esc(me.username)}</span></div>${me.barberId ? `<div><span>Koltuk</span><span>${esc(bname(me.barberId))}</span></div>` : ""}</div>
-    <form class="sec" id="pwF" novalidate style="max-width:480px"><h2>Şifre değiştir</h2>
+  const link = location.origin + "/" + shopSlug;
+  return `<div class="ph"><div><span class="lbl">${owner() ? "Dükkân sahibi" : "Usta"} · ${esc(shopSlug)}</span><h1>Hesabım</h1></div></div>
+    <div class="rows" style="max-width:520px"><div><span>Kullanıcı adı</span><span class="mono">${esc(me.username)}</span></div><div><span>Dükkân kodu</span><span class="mono">${esc(shopSlug)}</span></div></div>
+    <div class="linkbox" style="margin-top:12px;max-width:520px"><span class="mono">${esc(link)}</span><button class="btn light sm" data-act="copy" data-v="${esc(link)}">Bağlantıyı kopyala</button></div>
+    <form class="sec" id="nmF" novalidate style="max-width:520px"><h2>Adım</h2><div class="line"><label class="fld" for="nName"><span>Görünen ad</span><input id="nName" maxlength="40" value="${esc(me.name)}"></label><button class="btn light" type="submit">Kaydet</button></div></form>
+    <form class="sec" id="pwF" novalidate style="max-width:520px"><h2>Şifre değiştir</h2>
       <label class="fld" for="pOld"><span>Mevcut şifre</span><input id="pOld" type="password" autocomplete="current-password"></label>
       <label class="fld" for="pNew"><span>Yeni şifre <span class="soft">(en az 8 karakter)</span></span><input id="pNew" type="password" autocomplete="new-password"></label>
       <div><button class="btn" type="submit">Şifreyi değiştir</button></div></form>
@@ -400,34 +458,45 @@ document.addEventListener("click", async (e) => {
   const a = el.dataset.act, v = el.dataset.v, id = el.dataset.id;
   if (a === "close" && e.target !== el && el.classList.contains("scrim")) return;
   if (page === "ayar") readDraft();
-  const act = async (path, data, ok) => { try { await call(path, data); if (ok) toast(ok); await loadAgenda(true); customers = null; } catch (x) { toast(x.message); } };
+  const act = async (path, data, ok) => { try { await call(path, data); if (ok) toast(ok); customers = null; team = null; await loadAgenda(true); } catch (x) { toast(x.message); } };
   switch (a) {
-    case "go": page = v; openId = null; if (v !== "ayar") draft = null; if (v === "musteri") customers = null; if (v === "ekip") team = null; render(true); window.scrollTo(0, 0); if (v === "ajanda") loadAgenda(true); break;
+    case "forgot": renderAuth(null, true); break;
+    case "backLogin": renderAuth(); break;
+    case "go": page = v; openId = null; editB = null; if (v !== "ayar") draft = null; if (v === "musteri") customers = null; if (v === "ustalar") team = null; render(true); window.scrollTo(0, 0); if (v === "ajanda") loadAgenda(true); break;
     case "day": date = v; openId = null; render(true); await loadAgenda(true); break;
     case "filter": filter = v; render(true); break;
     case "open": openId = openId === v ? null : v; cancelAsk = null; render(true); break;
+    case "approve": await act("/api/staff?action=approve", { id }, "Onaylandı"); break;
+    case "rejAsk": rejectAsk = id; render(true); setTimeout(() => $("rr-" + id) && $("rr-" + id).focus(), 20); break;
+    case "rejNo": rejectAsk = null; render(true); break;
+    case "rejYes": { const r = ($("rr-" + id) || {}).value || ""; rejectAsk = null; await act("/api/staff?action=reject", { id, reason: r }, "Reddedildi, saat açıldı"); break; }
     case "st": await act("/api/staff?action=status", { id, status: v }, ST[v] + " olarak işaretlendi"); break;
     case "restore": await act("/api/staff?action=restore", { id }, "Randevu geri alındı"); break;
     case "note": await act("/api/staff?action=note", { id, staffNote: $("sn-" + id).value }, "Not kaydedildi"); break;
-    case "move": { const t = $("mvT-" + id).value, d = $("mvD-" + id).value; if (!t) { toast("Boş bir saat seç"); break; } await act("/api/staff?action=move", { id, date: d, time: t }, "Taşındı: " + dayLong(d) + " " + t); date = d; render(true); break; }
+    case "move": { const t = $("mvT-" + id).value, d = $("mvD-" + id).value; if (!t) { toast("Boş bir saat seç"); break; } date = d; await act("/api/staff?action=move", { id, date: d, time: t }, "Taşındı: " + dayLong(d) + " " + t); break; }
     case "cancelAsk": cancelAsk = id; render(true); break;
     case "cancelNo": cancelAsk = null; render(true); break;
     case "cancelYes": cancelAsk = null; await act("/api/staff?action=cancel", { id }, "Randevu iptal edildi, saat açıldı"); break;
-    case "unblock": await act("/api/staff?action=unblock", { ids: v.split(",") }, "Saat açıldı"); break;
+    case "unblock": await act("/api/staff?action=unblock", { id: v }, "Saat açıldı"); break;
     case "newBook": sheet = { kind: "book", date: date >= nowTR().date ? date : nowTR().date, barber: filter !== "all" ? filter : me.barberId }; renderSheet(); break;
-    case "newBlock": sheet = { kind: "block", date: date >= nowTR().date ? date : nowTR().date }; renderSheet(); break;
+    case "newBlock": sheet = { kind: "block", date: date >= nowTR().date ? date : nowTR().date, barber: owner() ? (filter !== "all" ? filter : "all") : me.barberId }; renderSheet(); break;
     case "close": if (!busy) { sheet = null; renderSheet(); } break;
+    case "hday": el.setAttribute("aria-pressed", el.getAttribute("aria-pressed") === "true" ? "false" : "true"); break;
+    case "addOpen": editB = "new"; render(true); setTimeout(() => $("aName") && $("aName").focus(), 20); break;
+    case "addClose": editB = null; render(true); break;
+    case "editB": editB = editB === v ? null : v; render(true); break;
     case "chair": try { await call("/api/admin?action=ownerChair", { on: v === "1" }); team = null; await loadAgenda(true); toast("Güncellendi"); } catch (x) { toast(x.message); } render(true); break;
-    case "resetPw": { const p = $("pw-" + v).value; try { await call("/api/admin?action=updateStaff", { username: v, password: p }); toast("Şifre değişti. Yeni şifreyi ustaya ilet."); team = null; render(true); } catch (x) { toast(x.message); } break; }
-    case "toggleU": try { await call("/api/admin?action=updateStaff", { username: v, disabled: el.dataset.d === "1" }); team = null; await loadAgenda(true); toast("Güncellendi"); } catch (x) { toast(x.message); } render(true); break;
-    case "delU": if (el.dataset.sure) { try { await call("/api/admin?action=removeStaff", { username: v }); team = null; await loadAgenda(true); toast("Hesap silindi"); } catch (x) { toast(x.message); } render(true); } else { el.dataset.sure = "1"; el.textContent = "Emin misin? Sil"; } break;
+    case "resetPw": try { await call("/api/admin?action=login", { barberId: v, password: $("pw-" + v).value }); toast("Şifre değişti; yenisini ustaya ilet"); team = null; } catch (x) { toast(x.message); } render(true); break;
+    case "toggleLogin": try { await call("/api/admin?action=login", { barberId: v, disabled: el.dataset.d === "1" }); toast("Güncellendi"); team = null; } catch (x) { toast(x.message); } render(true); break;
+    case "giveLogin": try { await call("/api/admin?action=login", { barberId: v, username: $("lu-" + v).value, password: $("lp-" + v).value }); toast("Giriş hesabı verildi"); team = null; } catch (x) { toast(x.message); } render(true); break;
+    case "hideB": try { await call("/api/admin?action=barber", { barberId: v, active: el.dataset.d === "1" }); team = null; await loadAgenda(true); toast("Güncellendi"); } catch (x) { toast(x.message); } render(true); break;
+    case "delB": if (el.dataset.sure) { try { await call("/api/admin?action=removeBarber", { barberId: v }); editB = null; team = null; await loadAgenda(true); toast("Usta silindi"); } catch (x) { toast(x.message); } render(true); } else { el.dataset.sure = "1"; el.textContent = "Emin misin? Sil"; } break;
     case "closed": { const d = +v; draft.closed = draft.closed.includes(d) ? draft.closed.filter(x => x !== d) : [...draft.closed, d]; render(true); break; }
     case "addSvc": draft.services.push({ id: "s" + Date.now().toString(36), name: "Yeni hizmet", dur: 30, price: 0 }); render(true); break;
     case "delSvc": if (draft.services.length > 1) draft.services = draft.services.filter(s => s.id !== v); else toast("En az bir hizmet kalmalı"); render(true); break;
     case "resetCfg": draft = null; render(true); break;
-    case "saveCfg": try { const r = await call("/api/admin?action=config", { cfg: draft }); A.cfg = r.cfg; draft = null; toast("Ayarlar kaydedildi"); } catch (x) { toast(x.message); } render(true); break;
-    case "forgot": forgot = true; renderAuth(); break;
-    case "backLogin": forgot = false; renderAuth(); break;
+    case "saveCfg": try { const r = await call("/api/admin?action=config", { cfg: draft }); shopSlug = r.slug; lsSet("sirada_shop", shopSlug); draft = null; toast("Ayarlar kaydedildi"); await loadAgenda(true); } catch (x) { toast(x.message); } render(true); break;
+    case "copy": try { await navigator.clipboard.writeText(v); toast("Kopyalandı"); } catch { prompt("Kopyala:", v); } break;
     case "logout": await call("/api/auth?action=logout", {}).catch(() => {}); me = null; A = null; renderAuth(); break;
   }
 });
@@ -435,22 +504,32 @@ document.addEventListener("change", (e) => {
   const t = e.target;
   if (t.id === "pick" && t.value) { date = t.value; openId = null; loadAgenda().then(() => render(true)); }
   if (t.dataset.mv) { const b = A.bookings.find(x => x.id === t.dataset.mv); $("mvT-" + b.id).innerHTML = freeOpts(b.barberId, t.value, b.dur, b.id, ""); }
-  if (sheet && sheet.kind === "book" && t.hasAttribute("data-re")) { readBook(); renderSheet(); }
+  if (sheet && t.hasAttribute("data-re")) { if (sheet.kind === "book") readBook(); else sheet.barber = $("kBar").value; renderSheet(); }
+  if (t.dataset.own) { const box = $(t.dataset.own + "hrs"); if (box) box.hidden = !t.checked; }
+  if (t.id === "aLogin") $("aLoginF").hidden = !t.checked;
   if (page === "ayar" && t.closest("main")) { readDraft(); updateSaveBar(); }
 });
-document.addEventListener("input", (e) => { if (page === "ayar" && e.target.closest && e.target.closest("main") && draft) { readDraft(); updateSaveBar(); return; } if (e.target.id === "cq") { custQ = e.target.value; const p = e.target.selectionStart; render(true); const n = $("cq"); n.focus(); n.setSelectionRange(p, p); } });
+document.addEventListener("input", (e) => {
+  if (page === "ayar" && e.target.closest && e.target.closest("main") && draft) { readDraft(); updateSaveBar(); return; }
+  if (e.target.id === "cq") { custQ = e.target.value; const p = e.target.selectionStart; render(true); const n = $("cq"); n.focus(); n.setSelectionRange(p, p); }
+});
 document.addEventListener("submit", async (e) => {
-  if (e.target.id === "addF") { e.preventDefault(); try { await call("/api/admin?action=addStaff", { name: $("aName").value, username: $("aUser").value, password: $("aPass").value }); toast("Usta eklendi"); team = null; await loadAgenda(true); } catch (x) { toast(x.message); } render(true); }
-  if (e.target.id === "pwF") { e.preventDefault(); try { await call("/api/auth?action=password", { old: $("pOld").value, password: $("pNew").value }); toast("Şifren değişti"); render(true); } catch (x) { toast(x.message); } }
+  const f = e.target;
+  if (f.dataset.hf) { e.preventDefault(); const bid = f.dataset.hf; try { await call("/api/staff?action=schedule", readHours("h" + bid + "_", bid)); toast("Saatler kaydedildi"); team = null; await loadAgenda(true); } catch (x) { toast(x.message); } render(true); }
+  if (f.dataset.rename) { e.preventDefault(); const bid = f.dataset.rename; try { await call("/api/admin?action=barber", { barberId: bid, name: $("bn-" + bid).value }); toast("Ad kaydedildi"); team = null; await loadAgenda(true); } catch (x) { toast(x.message); } render(true); }
+  if (f.id === "addF") { e.preventDefault(); const login = $("aLogin").checked;
+    try { await call("/api/admin?action=addBarber", { name: $("aName").value, title: $("aTitle").value, step: +$("aStep").value, ...(login ? { username: $("aUser").value, password: $("aPass").value } : {}) }); toast("Usta eklendi"); editB = null; team = null; await loadAgenda(true); } catch (x) { toast(x.message); } render(true); }
+  if (f.id === "pwF") { e.preventDefault(); try { await call("/api/auth?action=password", { old: $("pOld").value, password: $("pNew").value }); toast("Şifren değişti"); render(true); } catch (x) { toast(x.message); } }
+  if (f.id === "nmF") { e.preventDefault(); try { const r = await call("/api/auth?action=name", { name: $("nName").value }); me = r.user; toast("Kaydedildi"); await loadAgenda(true); } catch (x) { toast(x.message); } render(true); }
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet && !busy) { sheet = null; renderSheet(); } });
 
 async function boot2() { page = "ajanda"; date = null; A = null; range = null; render(true); await loadAgenda(true); }
 (async () => {
-  try { const r = await call("/api/auth?action=me"); me = r.user; needsSetup = r.needsSetup; demo = r.demo; } catch { $("root").innerHTML = `<div class="auth"><div class="empty"><b>Bağlanılamadı.</b> Sayfayı yenile.</div></div>`; return; }
+  try { const r = await call("/api/auth?action=me"); me = r.user; if (r.shop) { shopSlug = r.shop.slug; lsSet("sirada_shop", shopSlug); } } catch { $("root").innerHTML = `<div class="auth"><div class="empty"><b>Bağlanılamadı.</b> Sayfayı yenile.</div></div>`; return; }
   if (!me) return renderAuth();
   boot2();
-  setInterval(() => { if (me && document.visibilityState === "visible" && page === "ajanda" && !sheet && !typing() && !openId) loadAgenda(true); }, 20000);
+  setInterval(() => { if (me && document.visibilityState === "visible" && page === "ajanda" && !sheet && !typing() && !openId && !rejectAsk) loadAgenda(true); }, 20000);
 })();
 </script>
 </body>

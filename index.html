@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Randevu al</title>
+<title>Sırada · Berber randevusu</title>
 <meta name="description" content="Berber randevunu birkaç saniyede al.">
 <meta name="theme-color" content="#f4f0e7">
 <meta name="color-scheme" content="light only">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
-<link rel="stylesheet" href="/assets/base.css?v=3">
+<link rel="stylesheet" href="/assets/base.css?v=4">
 <style>
 header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px 6px }
-header.top .shop { font-family: var(--serif); font-size: 1.35rem; line-height: 1.1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+header.top .shop { font-family: var(--serif); font-size: 1.35rem; line-height: 1.1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none }
 .hero { padding-block: 26px 4px; display: grid; gap: 10px }
 .hero h1 { font-size: clamp(2.6rem, 11vw, 4rem) }
 .meta { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: .9rem; color: var(--soft) }
@@ -24,27 +24,48 @@ section.step > .h h2 { font-size: 1.45rem }
 .quick { margin-top: 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: var(--r); background: var(--card) }
 .quick b { font-family: var(--mono); font-size: 1.05rem }
 .group { display: grid; gap: 8px; margin-top: 4px }
+.barbers { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) }
+.bcard { display: grid; grid-template-columns: 44px 1fr; gap: 2px 12px; align-items: center; text-align: left; padding: 12px; border-radius: 12px; background: var(--card); box-shadow: inset 0 0 0 1.5px var(--hair) }
+.bcard:hover { box-shadow: inset 0 0 0 1.5px var(--hair-2) }
+.bcard[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--ink) }
+.bcard .av { grid-row: span 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; color: var(--on-band) }
+.bcard b { font-weight: 600; line-height: 1.2 }
+.bcard .s { font-size: .82rem; color: var(--soft); line-height: 1.3 }
+.bcard .nx { grid-column: 2; font-size: .82rem; font-family: var(--mono) }
 .ticket { display: grid; gap: 4px; padding: 22px 20px; border-radius: 16px; background: var(--card) }
 .ticket .t { font-family: var(--mono); font-size: 3rem; font-weight: 600; line-height: 1 }
+.count { font-family: var(--mono); font-weight: 600 }
 .done { padding-block: 28px 0; display: grid; gap: 14px }
+.state { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r); background: var(--card); font-size: .93rem }
+.state .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 6px; flex: none; background: var(--band); box-shadow: 0 0 0 4px color-mix(in srgb, var(--band) 35%, transparent) }
+.state.ok .dot { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 20%, transparent) }
+.state.bad .dot { background: var(--bad); box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 20%, transparent) }
 .mine { display: grid; border-top: 1px solid var(--hair); margin-top: 8px }
 .mine > a { display: grid; grid-template-columns: 70px 1fr auto; gap: 12px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--hair); text-decoration: none }
 .mine .tm { font-family: var(--mono); font-weight: 600; font-size: 1.1rem; line-height: 1.1 }
 .mine .tm small { display: block; font-family: var(--sans); font-weight: 500; font-size: .75rem; color: var(--soft) }
+.land { padding-block: 9vh 0; display: grid; gap: 18px; max-width: 560px }
+.land h1 { font-size: clamp(3rem, 13vw, 5rem) }
+.land form { display: flex; gap: 8px; flex-wrap: wrap }
+.land form input { flex: 1 1 220px }
+.feat { display: grid; gap: 0; border-top: 1px solid var(--hair); margin-top: 10px }
+.feat > div { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--hair) }
+.feat .n { font-family: var(--mono); color: var(--soft) }
 footer { margin-top: 48px; padding-top: 14px; border-top: 1px solid var(--hair); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: .85rem; color: var(--soft) }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header class="top"><span class="shop" id="shop">&nbsp;</span><button class="link small" data-act="mine" id="mineBtn" hidden>Randevularım</button></header>
-  <main id="app"><div class="empty" style="margin-top:30px">Boş saatler yükleniyor…</div></main>
-  <footer><span id="foot"></span><a class="link" href="/usta">Usta girişi</a></footer>
+  <header class="top"><a class="shop" id="shop" href="/">Sırada</a><button class="link small" data-act="mine" id="mineBtn" hidden>Randevularım</button></header>
+  <main id="app"><div class="empty" style="margin-top:30px">Yükleniyor…</div></main>
+  <footer><span id="foot">Sırada · online berber randevusu</span><a class="link" id="ustaLink" href="/usta">Usta girişi</a></footer>
 </div>
 <div id="sheet"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 const DAYS = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"], DAYS_L = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
 const MON = ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"];
+const COLORS = ["#f6d24a", "#eeb2c4", "#bccaa9", "#e9a07c", "#b9c4e8", "#d9c3f0"];
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const pad = (n) => String(n).padStart(2, "0");
@@ -52,149 +73,204 @@ const toMin = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ""); return m ?
 const fmt = (m) => pad(Math.floor(m / 60)) + ":" + pad(m % 60);
 const addDays = (d, n) => { const x = new Date(d + "T00:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 const wd = (d) => new Date(d + "T00:00:00Z").getUTCDay();
+const dn = (d) => new Date(d + "T00:00:00Z").getUTCDate(), dm = (d) => MON[new Date(d + "T00:00:00Z").getUTCMonth()];
 const tl = (n) => (Number(n) || 0).toLocaleString("tr-TR") + " ₺";
-const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
-function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 2800); }
-async function api(action, data) {
-  const r = await fetch("/api/public?action=" + action + (data && data.qs ? "&" + data.qs : ""), data && !data.qs ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {});
+const ini = (n) => String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toLocaleUpperCase("tr-TR");
+const SLUG = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, "")).toLowerCase();
+const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k + ":" + SLUG)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k + ":" + SLUG, JSON.stringify(v)); } catch {} } };
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 3200); }
+async function api(action, data, qs = "") {
+  const r = await fetch(`/api/public?shop=${encodeURIComponent(SLUG)}&action=${action}${qs}`, data ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {});
   let j = {}; try { j = await r.json(); } catch {}
-  if (!r.ok) throw Object.assign(new Error(j.error || "Bağlantı hatası. Tekrar dene."), { status: r.status });
+  if (!r.ok) throw Object.assign(new Error(j.error || "Bağlantı hatası. Tekrar dene."), { status: r.status, code: j.code });
   return j;
 }
+// "2 gün 4 saat sonra"
+function until(date, time) {
+  const [y, mo, d] = date.split("-").map(Number), st = toMin(time);
+  const ms = Date.UTC(y, mo - 1, d, 0, st) - 3 * 3600e3 - Date.now();
+  if (ms <= 0) return ms > -30 * 60e3 ? "şimdi" : "geçti";
+  const m = Math.round(ms / 60000), days = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mn = m % 60;
+  if (days) return `${days} gün ${h ? h + " saat " : ""}sonra`;
+  if (h) return `${h} saat ${mn ? mn + " dk " : ""}sonra`;
+  return `${mn} dk sonra`;
+}
+const STAT = { talep: ["Onay bekliyor", ""], onayli: ["Onaylandı", "ok"], geldi: ["Tamamlandı", "ok"], gelmedi: ["Gelinmedi", "bad"], iptal: ["İptal edildi", "bad"], red: ["Onaylanmadı", "bad"] };
 
-let S = { cfg: null, busy: [], now: null, setup: false };
+let S = null;
 let sel = { service: null, barber: "any", date: null };
 let view = "book", done = null, manage = null, sheet = null, sending = false;
 
 const today = () => S.now.date;
 function dayName(d) { return d === today() ? "Bugün" : d === addDays(today(), 1) ? "Yarın" : DAYS[wd(d)]; }
-function dayLong(d) { const x = new Date(d + "T00:00:00Z"); const rel = d === today() ? "Bugün, " : d === addDays(today(), 1) ? "Yarın, " : ""; return rel + x.getUTCDate() + " " + MON[x.getUTCMonth()] + " " + DAYS_L[wd(d)]; }
+function dayLong(d) { const rel = d === today() ? "Bugün, " : d === addDays(today(), 1) ? "Yarın, " : ""; return rel + dn(d) + " " + dm(d) + " " + DAYS_L[wd(d)]; }
 const svc = (id) => S.cfg.services.find(s => s.id === id);
-const bname = (id) => (S.cfg.barbers.find(b => b.id === id) || {}).name || "Usta";
+const bar = (id) => S.cfg.barbers.find(b => b.id === id);
 function nowMin() { const t = new Date(Date.now() + 3 * 3600e3); return t.getUTCHours() * 60 + t.getUTCMinutes(); }
-function busySet() { const s = new Set(); for (const [d, b, t, dur] of S.busy) for (let m = toMin(t); m < toMin(t) + dur; m += 30) s.add(d + "|" + b + "|" + m); return s; }
-function inHours(m, dur) { const c = S.cfg; if (m < toMin(c.open) || m + dur > toMin(c.close)) return false; const bs = toMin(c.breakStart), be = toMin(c.breakEnd); return !(bs < be && m < be && bs < m + dur); }
-function freeBarber(set, d, m, dur) { const list = sel.barber === "any" ? S.cfg.barbers.map(b => b.id) : [sel.barber];
-  return list.find(b => { for (let x = m; x < m + dur; x += 30) if (set.has(d + "|" + b + "|" + x)) return false; return true; }) || null; }
-function times(d, dur, set = busySet()) {
-  if (S.cfg.closed.includes(wd(d))) return [];
-  const out = [], min = d === today() ? nowMin() + Number(S.cfg.minNotice || 0) : -1;
-  for (let m = toMin(S.cfg.open); m + dur <= toMin(S.cfg.close); m += 30) {
-    if (!inHours(m, dur) || (d === today() && m <= nowMin())) continue;
-    out.push({ m, ok: m > min && !!freeBarber(set, d, m, dur) });
+function busyOf() { const o = {}; for (const [d, b, t, dur] of S.busy) (o[d + "|" + b] ||= []).push([toMin(t), toMin(t) + dur]); return o; }
+function barberTimes(b, d, dur, busy) {   // start times for one barber on one day
+  if (b.closed.includes(wd(d))) return [];
+  const out = [], o = toMin(b.open), c = toMin(b.close), bs = toMin(b.breakStart), be = toMin(b.breakEnd);
+  const min = d === today() ? nowMin() + Number(S.cfg.minNotice || 0) : -1, iv = busy[d + "|" + b.id] || [];
+  for (let m = o; m + dur <= c; m += b.step) {
+    if (bs < be && m < be && bs < m + dur) continue;
+    if (d === today() && m <= nowMin()) continue;
+    const free = m > min && !iv.some(([s, e]) => m < e && s < m + dur);
+    out.push({ m, ok: free, b: b.id });
   }
   return out;
 }
+function times(d, dur, busy = busyOf()) {
+  const list = sel.barber === "any" ? S.cfg.barbers : [bar(sel.barber)].filter(Boolean);
+  const map = new Map();
+  for (const b of list) for (const t of barberTimes(b, d, dur, busy)) { const cur = map.get(t.m); if (!cur || (!cur.ok && t.ok)) map.set(t.m, t); }
+  return [...map.values()].sort((a, b) => a.m - b.m);
+}
 const daysList = () => Array.from({ length: Number(S.cfg.horizon) || 14 }, (_, i) => addDays(today(), i));
-function earliest() { const s = svc(sel.service); if (!s) return null; const set = busySet(); for (const d of daysList()) { const t = times(d, s.dur, set).find(x => x.ok); if (t) return { d, m: t.m }; } return null; }
+const dayClosed = (d) => (sel.barber === "any" ? S.cfg.barbers : [bar(sel.barber)].filter(Boolean)).every(b => b.closed.includes(wd(d)));
+function earliestFor(barberId) {
+  const s = svc(sel.service); if (!s) return null; const busy = busyOf(); const keep = sel.barber; sel.barber = barberId;
+  let r = null; for (const d of daysList()) { const t = times(d, s.dur, busy).find(x => x.ok); if (t) { r = { d, m: t.m }; break; } }
+  sel.barber = keep; return r;
+}
+function myList() { return store.get("mine", []); }
 
+/* ---------- landing (no shop in the address) ---------- */
+function renderLanding() {
+  document.title = "Sırada · Berber randevusu";
+  $("app").innerHTML = `<section class="land"><h1>Sıra<span class="band">da.</span></h1>
+    <p class="soft" style="margin:0;font-size:1.05rem">Berberler için online randevu. Müşteri tek dokunuşla saat seçer, usta onaylar, kimse dükkânda beklemez.</p>
+    <form id="goF"><input id="goS" placeholder="Berberinin bağlantı adı, örn. berber-01" autocapitalize="none" aria-label="Berber bağlantı adı"><button class="btn" type="submit">Randevu al</button></form>
+    <div class="feat"><div><span class="n">01</span><span><b>Müşteri saati seçer.</b> <span class="soft">Ustayı, günü ve boş saati görür; adını ve telefonunu yazıp talep gönderir.</span></span></div>
+      <div><span class="n">02</span><span><b>Usta onaylar.</b> <span class="soft">Talep usta paneline düşer; onaylanınca randevu kesinleşir.</span></span></div>
+      <div><span class="n">03</span><span><b>Müşteri zamanında gelir.</b> <span class="soft">Ne kadar kaldığını görür, takvimine hatırlatma ekler.</span></span></div></div>
+  </section>`;
+  $("goF").onsubmit = (e) => { e.preventDefault(); const v = $("goS").value.trim().toLowerCase().replace(/^.*\//, "").replace(/\s+/g, "-"); if (v) location.href = "/" + encodeURIComponent(v); };
+}
+
+/* ---------- booking ---------- */
 function render() {
-  if (!S.cfg) return;
-  $("shop").textContent = S.cfg.shopName; document.title = S.cfg.shopName + " · Randevu al";
-  $("foot").textContent = S.cfg.shopName;
-  $("mineBtn").hidden = !store.get("sirada_mine", []).length || view === "mine";
+  if (!S) return;
+  $("shop").textContent = S.cfg.shopName; $("shop").href = "/" + SLUG; document.title = S.cfg.shopName + " · Randevu al";
+  $("foot").textContent = S.cfg.shopName; $("ustaLink").href = "/usta?d=" + encodeURIComponent(SLUG);
+  $("mineBtn").hidden = !myList().length || view === "mine";
   const app = $("app");
-  if (S.setup) { app.innerHTML = `<div class="hero"><h1>Yakında <span class="band">açılıyor.</span></h1><p class="soft">Bu dükkânın online randevusu henüz kurulmadı. Dükkân sahibiysen <a class="link" href="/usta">usta girişinden</a> kurulumu tamamla.</p></div>`; return; }
+  if (S.setup) { app.innerHTML = `<div class="hero"><h1>Yakında <span class="band">açılıyor.</span></h1><p class="soft">${esc(S.cfg.shopName)} online randevuya henüz başlamadı.</p></div>`; return; }
   if (manage) return renderManage();
   if (done) return renderDone();
   if (view === "mine") return renderMine();
   if (!svc(sel.service)) sel.service = S.cfg.services[0]?.id;
-  if (sel.barber !== "any" && !S.cfg.barbers.some(b => b.id === sel.barber)) sel.barber = "any";
-  const s = svc(sel.service), set = busySet(), days = daysList();
-  if (!sel.date || !days.includes(sel.date) || S.cfg.closed.includes(wd(sel.date))) sel.date = days.find(d => times(d, s.dur, set).some(x => x.ok)) || days.find(d => !S.cfg.closed.includes(wd(d))) || today();
-  const ts = times(sel.date, s.dur, set), fast = earliest();
+  if (sel.barber !== "any" && !bar(sel.barber)) sel.barber = "any";
+  if (S.cfg.barbers.length === 1) sel.barber = S.cfg.barbers[0].id;
+  const s = svc(sel.service), busy = busyOf(), days = daysList();
+  if (!sel.date || !days.includes(sel.date) || dayClosed(sel.date)) sel.date = days.find(d => !dayClosed(d) && times(d, s.dur, busy).some(x => x.ok)) || days.find(d => !dayClosed(d)) || today();
+  const ts = times(sel.date, s.dur, busy), fast = earliestFor(sel.barber);
   const grp = (l, a) => a.length ? `<div class="group"><span class="lbl">${l}</span><div class="times">${a.map(x => `<button class="time" data-act="pick" data-m="${x.m}" ${x.ok ? "" : "disabled"}>${fmt(x.m)}</button>`).join("")}</div></div>` : "";
-  const c = S.cfg;
+  const c = S.cfg, open = myList().find(x => x.open);
   app.innerHTML = `
   <section class="hero"><h1>Sıranı <span class="band">al.</span></h1>
-    <div class="meta">${c.address ? `<span>${esc(c.address)}</span>` : ""}${c.phone ? `<span>Tel <span class="mono">${esc(c.phone)}</span></span>` : ""}<span>${esc(c.open)}–${esc(c.close)}${c.closed.length ? " · " + c.closed.map(d => DAYS_L[d]).join(", ") + " kapalı" : ""}</span></div></section>
-  ${fast ? `<div class="quick"><span><span class="soft small">En erken boş saat</span><br><b>${dayName(fast.d)} ${fmt(fast.m)}</b></span><button class="btn y sm" data-act="fast" data-d="${fast.d}" data-m="${fast.m}">Bu saati al</button></div>` : ""}
+    <div class="meta">${c.address ? `<span>${esc(c.address)}</span>` : ""}${c.phone ? `<span>Tel <span class="mono">${esc(c.phone)}</span></span>` : ""}<span>${esc(c.open)}–${esc(c.close)}</span></div></section>
+  ${open ? `<div class="state" style="margin-top:14px"><span class="dot"></span><span>Açık bir randevun var: <b>${esc(dayLong(open.date))} ${esc(open.time)}</b>. Yeni randevu için önce onu iptal etmelisin. <button class="link" data-act="mine">Randevularım</button></span></div>` : ""}
+  ${fast ? `<div class="quick"><span><span class="soft small">En erken boş saat${sel.barber !== "any" ? " · " + esc(bar(sel.barber).name) : ""}</span><br><b>${dayName(fast.d)} ${fmt(fast.m)}</b></span><button class="btn y sm" data-act="fast" data-d="${fast.d}" data-m="${fast.m}">Bu saati al</button></div>` : ""}
   <section class="step"><div class="h"><h2>Hizmet</h2></div>
     <div class="chips">${c.services.map(x => `<button class="chip" data-act="svc" data-v="${x.id}" aria-pressed="${sel.service === x.id}"><b>${esc(x.name)}</b><span class="soft">${x.dur} dk · ${tl(x.price)}</span></button>`).join("")}</div></section>
-  ${c.barbers.length > 1 ? `<section class="step"><div class="h"><h2>Usta</h2></div>
-    <div class="chips"><button class="chip" data-act="barber" data-v="any" aria-pressed="${sel.barber === "any"}"><b>Fark etmez</b><span class="soft">İlk boş usta</span></button>
-    ${c.barbers.map(b => `<button class="chip" data-act="barber" data-v="${b.id}" aria-pressed="${sel.barber === b.id}"><b>${esc(b.name)}</b><span class="soft">Usta</span></button>`).join("")}</div></section>` : ""}
+  ${c.barbers.length > 1 ? `<section class="step"><div class="h"><h2>Usta</h2><span class="soft small">${c.barbers.length} usta</span></div>
+    <div class="barbers">
+      <button class="bcard" data-act="barber" data-v="any" aria-pressed="${sel.barber === "any"}"><span class="av" style="background:var(--paper);box-shadow:inset 0 0 0 1.5px var(--hair-2);color:var(--ink)">?</span><b>Fark etmez</b><span class="s">İlk boş ustaya yazılırsın</span></button>
+      ${c.barbers.map((b, i) => { const e = earliestFor(b.id); return `<button class="bcard" data-act="barber" data-v="${b.id}" aria-pressed="${sel.barber === b.id}"><span class="av" style="background:${COLORS[i % COLORS.length]}">${esc(ini(b.name))}</span>
+        <b>${esc(b.name)}</b><span class="s">${b.title ? esc(b.title) + " · " : ""}${b.step} dk'da bir</span><span class="nx">${e ? "En erken " + dayName(e.d) + " " + fmt(e.m) : "Yakında boş yer yok"}</span></button>`; }).join("")}
+    </div></section>` : ""}
   <section class="step"><div class="h"><h2>Gün</h2></div>
-    <div class="days">${days.map(d => { const x = new Date(d + "T00:00:00Z"); return `<button class="day" data-act="day" data-v="${d}" aria-pressed="${sel.date === d}" ${c.closed.includes(wd(d)) ? "disabled" : ""}><span class="dn">${dayName(d)}</span><span class="dd">${x.getUTCDate()}</span><span class="dm">${MON[x.getUTCMonth()]}</span></button>`; }).join("")}</div></section>
+    <div class="days">${days.map(d => `<button class="day" data-act="day" data-v="${d}" aria-pressed="${sel.date === d}" ${dayClosed(d) ? "disabled" : ""}><span class="dn">${dayName(d)}</span><span class="dd">${dn(d)}</span><span class="dm">${dm(d)}</span></button>`).join("")}</div></section>
   <section class="step"><div class="h"><h2>Saat</h2><span class="soft small">${esc(dayLong(sel.date))} · ${s.dur} dk</span></div>
     ${ts.some(x => x.ok) ? grp("Sabah", ts.filter(x => x.m < 720)) + grp("Öğleden sonra", ts.filter(x => x.m >= 720 && x.m < 1020)) + grp("Akşam", ts.filter(x => x.m >= 1020))
-      : `<div class="empty"><b>${c.closed.includes(wd(sel.date)) ? "Bu gün kapalıyız." : "Bu gün için boş saat kalmadı."}</b>${fast ? ` En erken: ${dayLong(fast.d)} ${fmt(fast.m)}.` : ""}</div>`}
+      : `<div class="empty"><b>${dayClosed(sel.date) ? "Bu gün kapalı." : "Bu gün için boş saat kalmadı."}</b>${fast ? ` En erken: ${dayLong(fast.d)} ${fmt(fast.m)}.` : ""}</div>`}
   </section>`;
 }
-
+function pickBarber(d, m, dur) { const busy = busyOf(); const list = sel.barber === "any" ? S.cfg.barbers : [bar(sel.barber)]; return list.find(b => barberTimes(b, d, dur, busy).some(t => t.m === m && t.ok)) || null; }
 function renderSheet() {
   const w = $("sheet");
   if (!sheet) { w.innerHTML = ""; document.body.style.overflow = ""; return; }
   document.body.style.overflow = "hidden";
-  const s = svc(sel.service), who = store.get("sirada_who", {});
-  const b = freeBarber(busySet(), sheet.d, sheet.m, s.dur);
+  const s = svc(sel.service), who = store.get("who", {}), b = pickBarber(sheet.d, sheet.m, s.dur);
   w.innerHTML = `<div class="scrim" data-act="close"><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sh">
     <h2 id="sh">${esc(dayLong(sheet.d))}, <span class="band">${fmt(sheet.m)}</span></h2>
-    <div class="rows"><div><span>Hizmet</span><span>${esc(s.name)}</span></div><div><span>Usta</span><span>${b ? esc(bname(b)) : "—"}</span></div>
+    <span class="soft small" style="margin-top:-8px">${until(sheet.d, fmt(sheet.m))}</span>
+    <div class="rows"><div><span>Hizmet</span><span>${esc(s.name)}</span></div><div><span>Usta</span><span>${b ? esc(b.name) : "—"}</span></div>
       <div><span>Süre</span><span>${fmt(sheet.m)}–${fmt(sheet.m + s.dur)}</span></div><div><span>Ücret (dükkânda)</span><span>${tl(s.price)}</span></div></div>
     <form id="f" class="grid2" novalidate>
       <label class="fld" for="fn"><span>Ad soyad</span><input id="fn" autocomplete="name" value="${esc(sheet.name ?? who.name ?? "")}" placeholder="Ahmet Yılmaz"></label>
       <label class="fld" for="fp"><span>Telefon</span><input id="fp" type="tel" inputmode="tel" autocomplete="tel" value="${esc(sheet.phone ?? who.phone ?? "")}" placeholder="05xx xxx xx xx"></label>
       <label class="fld" for="fo" style="grid-column:1/-1"><span>Not <span class="soft">(isteğe bağlı)</span></span><textarea id="fo" maxlength="240" placeholder="Örn. yanlar 2 numara">${esc(sheet.note || "")}</textarea></label>
     </form>
-    ${sheet.err ? `<div class="err">${esc(sheet.err)}</div>` : ""}
-    <div class="acts"><button class="btn light" data-act="close">Vazgeç</button><button class="btn" data-act="confirm" ${sending ? "disabled" : ""}>${sending ? "Kaydediliyor…" : "Onayla"}</button></div>
+    <p class="soft small" style="margin:0">Talebin ustaya gider; usta onaylayınca randevun kesinleşir. Aynı anda tek açık randevun olabilir.</p>
+    ${sheet.err ? `<div class="err">${esc(sheet.err)}${sheet.code === "open" && myList().length ? ` <button class="link" data-act="mine">Randevularım</button>` : ""}</div>` : ""}
+    <div class="acts"><button class="btn light" data-act="close">Vazgeç</button><button class="btn" data-act="confirm" ${sending ? "disabled" : ""}>${sending ? "Gönderiliyor…" : "Talep gönder"}</button></div>
   </div></div>`;
   setTimeout(() => { const n = $("fn"), p = $("fp"); (n && !n.value ? n : p && !p.value ? p : null)?.focus(); }, 40);
 }
-async function confirm() {
+async function confirmBook() {
   sheet.name = $("fn").value; sheet.phone = $("fp").value; sheet.note = $("fo").value;
   if (sheet.name.trim().length < 2) { sheet.err = "Adını yaz."; return renderSheet(); }
   if (!/^0?5\d{9}$/.test(sheet.phone.replace(/\D/g, "").replace(/^90/, ""))) { sheet.err = "Telefonu 05xx xxx xx xx biçiminde yaz."; return renderSheet(); }
-  sending = true; sheet.err = ""; renderSheet();
+  sending = true; sheet.err = ""; sheet.code = null; renderSheet();
   try {
     const r = await api("book", { serviceId: sel.service, barberId: sel.barber, date: sheet.d, time: fmt(sheet.m), name: sheet.name, phone: sheet.phone, note: sheet.note });
-    store.set("sirada_who", { name: sheet.name.trim(), phone: sheet.phone.trim() });
-    const mine = store.get("sirada_mine", []).filter(x => x.id !== r.booking.id); mine.unshift({ id: r.booking.id, k: r.key, date: r.booking.date, time: r.booking.time }); store.set("sirada_mine", mine.slice(0, 20));
+    store.set("who", { name: sheet.name.trim(), phone: sheet.phone.trim() });
+    const mine = myList().filter(x => x.id !== r.booking.id); mine.unshift({ id: r.booking.id, k: r.key, date: r.booking.date, time: r.booking.time, open: true }); store.set("mine", mine.slice(0, 20));
     done = { ...r.booking, key: r.key }; sheet = null; sending = false;
     renderSheet(); render(); window.scrollTo(0, 0); load();
-  } catch (e) { sending = false; sheet.err = e.message; if (e.status === 409) { await load(); } renderSheet(); }
+  } catch (e) { sending = false; sheet.err = e.message; sheet.code = e.code; if (e.status === 409) await load(); renderSheet(); }
 }
-function manageUrl(id, k) { return location.origin + "/?r=" + encodeURIComponent(id) + "&k=" + encodeURIComponent(k); }
+const manageUrl = (id, k) => location.origin + "/" + SLUG + "?r=" + encodeURIComponent(id) + "&k=" + encodeURIComponent(k);
+function stateBox(b) {
+  const [txt, cls] = STAT[b.status] || ["", ""];
+  const exp = b.status === "talep" ? "Usta talebini gördüğünde onaylayacak. Bu sayfadan durumunu takip edebilirsin." : b.status === "onayli" ? "Randevun kesinleşti. Zamanında gel, ödemeyi dükkânda yaparsın." :
+    b.status === "red" ? "Usta bu saati onaylayamadı. Başka bir saat seçebilirsin." : b.status === "iptal" ? (b.closedBy && b.closedBy.startsWith("dukkan") ? "Dükkân randevuyu iptal etti." : "Randevuyu iptal ettin.") : "";
+  return `<div class="state ${cls}"><span class="dot"></span><span><b>${txt}.</b> ${exp}</span></div>`;
+}
+function ticket(b) {
+  const live = b.status === "talep" || b.status === "onayli";
+  return `<div class="ticket"><span class="lbl">${esc(dayLong(b.date))}</span><span class="t" style="${live ? "" : "text-decoration:line-through;color:var(--soft)"}">${b.time}</span>
+    ${live ? `<span class="count" data-until="${b.date} ${b.time}">${until(b.date, b.time)}</span>` : ""}
+    <span>${esc(b.serviceName)} · ${esc(b.barberName)} · ${tl(b.price)}</span>${b.note ? `<span class="soft small">Notun: ${esc(b.note)}</span>` : ""}</div>`;
+}
 function renderDone() {
   const b = done;
-  $("app").innerHTML = `<section class="done">
-    <h1 style="font-size:2.6rem">Sıran <span class="band">hazır.</span></h1>
-    <div class="ticket"><span class="lbl">${esc(dayLong(b.date))}</span><span class="t">${b.time}</span><span>${esc(b.serviceName)} · ${esc(b.barberName)} · ${tl(b.price)}</span>${b.note ? `<span class="soft small">Notun: ${esc(b.note)}</span>` : ""}</div>
+  $("app").innerHTML = `<section class="done"><h1 style="font-size:2.6rem">Talebin <span class="band">gitti.</span></h1>
+    ${ticket(b)}${stateBox(b)}
     <button class="btn y full" data-act="ics">Takvime ekle · 1 saat önce hatırlat</button>
-    <div class="acts"><button class="btn light" data-act="copyLink">Randevu bağlantısını kopyala</button><button class="btn light" data-act="again">Yeni randevu</button></div>
-    <p class="soft small" style="margin:0">Randevun bu cihazda “Randevularım” altında durur. Başka cihazdan görmek ya da iptal etmek için bağlantıyı sakla.${Number(S.cfg.cancelHours) ? ` İptal en geç ${S.cfg.cancelHours} saat önce yapılabilir.` : ""}</p>
-  </section>`;
+    <div class="acts"><button class="btn light" data-act="copyLink">Randevu bağlantısını kopyala</button><button class="btn light" data-act="openDone">Durumu takip et</button></div>
+    <p class="soft small" style="margin:0">Randevun bu cihazda “Randevularım” altında durur. Başka cihazdan görmek ya da iptal etmek için bağlantıyı sakla.</p></section>`;
 }
 async function renderMine() {
-  const list = store.get("sirada_mine", []);
+  const list = myList();
   $("app").innerHTML = `<section class="hero"><h1>Randevu<span class="band">larım</span></h1><p class="soft" style="margin:0">Bu cihazdan aldığın randevular.</p></section>
-    <div class="mine" id="mineList">${list.map(x => `<a href="/?r=${encodeURIComponent(x.id)}&k=${encodeURIComponent(x.k)}" data-act="open" data-id="${esc(x.id)}" data-k="${esc(x.k)}"><span class="tm">${esc(x.time)}<small>${esc(dayName(x.date))}</small></span><span id="m-${esc(x.id)}" class="soft small">Yükleniyor…</span><span class="soft">›</span></a>`).join("") || `<div class="empty" style="margin-top:12px">Henüz randevun yok.</div>`}</div>
+    <div class="mine">${list.map(x => `<a href="/${SLUG}?r=${encodeURIComponent(x.id)}&k=${encodeURIComponent(x.k)}" data-act="open" data-id="${esc(x.id)}" data-k="${esc(x.k)}"><span class="tm" id="t-${esc(x.id)}">${esc(x.time)}<small>${esc(dayName(x.date))}</small></span><span id="m-${esc(x.id)}" class="soft small">Yükleniyor…</span><span class="soft">›</span></a>`).join("") || `<div class="empty" style="margin-top:12px">Henüz randevun yok.</div>`}</div>
     <div style="margin-top:18px"><button class="btn light" data-act="book">Yeni randevu al</button></div>`;
-  for (const x of list) api("booking", { qs: "id=" + encodeURIComponent(x.id) + "&k=" + encodeURIComponent(x.k) }).then(r => {
-    const e = $("m-" + x.id); if (!e) return; const b = r.booking;
-    e.innerHTML = `${esc(b.serviceName)} · ${esc(b.barberName)} <span class="tag ${b.status}">${statusText(b)}</span>`;
-    e.previousElementSibling.innerHTML = `${esc(b.time)}<small>${esc(dayName(b.date))} ${new Date(b.date + "T00:00:00Z").getUTCDate()} ${MON[new Date(b.date + "T00:00:00Z").getUTCMonth()]}</small>`;
+  for (const x of list) api("booking", null, "&id=" + encodeURIComponent(x.id) + "&k=" + encodeURIComponent(x.k)).then(r => {
+    const b = r.booking, e = $("m-" + x.id); if (!e) return; syncMine(b);
+    const live = b.status === "talep" || b.status === "onayli";
+    e.innerHTML = `${esc(b.serviceName)} · ${esc(b.barberName)} <span class="tag ${b.status === "talep" ? "bekliyor" : b.status === "onayli" ? "geldi" : "iptal"}">${STAT[b.status][0]}</span>${live ? `<br><span class="count" data-until="${b.date} ${b.time}">${until(b.date, b.time)}</span>` : ""}`;
+    $("t-" + x.id).innerHTML = `${esc(b.time)}<small>${esc(dayName(b.date))} ${dn(b.date)} ${dm(b.date)}</small>`;
   }).catch(() => { const e = $("m-" + x.id); if (e) e.textContent = "Bulunamadı"; });
 }
-function statusText(b) { return b.status === "iptal" ? (b.cancelledBy && b.cancelledBy.startsWith("dukkan") ? "Dükkân iptal etti" : "İptal") : b.status === "geldi" ? "Tamamlandı" : b.status === "gelmedi" ? "Gelinmedi" : "Onaylı"; }
+function syncMine(b) { const l = myList(); const x = l.find(y => y.id === b.id); if (!x) return; x.date = b.date; x.time = b.time; x.open = (b.status === "talep" || b.status === "onayli") && until(b.date, b.time) !== "geçti"; store.set("mine", l); }
 function renderManage() {
   const m = manage;
   if (m.loading) { $("app").innerHTML = `<div class="empty" style="margin-top:30px">Randevu yükleniyor…</div>`; return; }
   if (m.error) { $("app").innerHTML = `<div class="hero"><h1>Randevu <span class="band">bulunamadı.</span></h1><p class="soft">${esc(m.error)}</p><div><button class="btn" data-act="book">Randevu al</button></div></div>`; return; }
-  const b = m.booking;
-  $("app").innerHTML = `<section class="done">
-    <span class="lbl">Randevun</span>
-    <div class="ticket"><span class="lbl">${esc(dayLong(b.date))}</span><span class="t" style="${b.status === "iptal" ? "text-decoration:line-through;color:var(--soft)" : ""}">${b.time}</span><span>${esc(b.serviceName)} · ${esc(b.barberName)} · ${tl(b.price)}</span>
-      <span style="margin-top:6px"><span class="tag ${b.status}">${statusText(b)}</span></span>${b.note ? `<span class="soft small">Notun: ${esc(b.note)}</span>` : ""}</div>
-    ${b.status === "bekliyor" ? `<button class="btn y full" data-act="ics">Takvime ekle · 1 saat önce hatırlat</button>
-      ${m.canCancel ? (m.ask ? `<div class="note"><b>Randevu iptal edilsin mi?</b> Saat başkalarına açılır.<div class="acts" style="margin-top:10px"><button class="btn light" data-act="noCancel">Vazgeç</button><button class="btn danger" data-act="doCancel">Evet, iptal et</button></div></div>`
-        : `<button class="btn danger full" data-act="askCancel">Randevuyu iptal et</button>`) : `<p class="soft small" style="margin:0">İptal süresi geçti. Gelemeyeceksen dükkânı ara${S.cfg.phone ? `: <span class="mono" style="color:var(--ink)">${esc(S.cfg.phone)}</span>` : ""}.</p>`}` : ""}
-    <div><button class="btn light" data-act="book">Yeni randevu al</button></div></section>`;
+  const b = m.booking, live = b.status === "talep" || b.status === "onayli";
+  $("app").innerHTML = `<section class="done"><span class="lbl">Randevun</span>${ticket(b)}${stateBox(b)}
+    ${live ? `<button class="btn y full" data-act="ics">Takvime ekle · 1 saat önce hatırlat</button>
+      ${m.canCancel ? (m.ask ? `<div class="note"><b>${b.status === "talep" ? "Talep geri çekilsin mi?" : "Randevu iptal edilsin mi?"}</b> Saat başkalarına açılır.<div class="acts" style="margin-top:10px"><button class="btn light" data-act="noCancel">Vazgeç</button><button class="btn danger" data-act="doCancel">Evet, iptal et</button></div></div>`
+        : `<button class="btn danger full" data-act="askCancel">${b.status === "talep" ? "Talebi geri çek" : "Randevuyu iptal et"}</button>`) : `<p class="soft small" style="margin:0">İptal süresi geçti. Gelemeyeceksen dükkânı ara${S.cfg.phone ? `: <span class="mono" style="color:var(--ink)">${esc(S.cfg.phone)}</span>` : ""}.</p>`}
+      <div><button class="btn light" data-act="book">Randevu sayfasına dön</button></div>`
+      : `<div><button class="btn" data-act="book">Yeni randevu al</button></div>`}</section>`;
 }
 async function openManage(id, k) {
   manage = { id, k, loading: true }; render();
-  try { const r = await api("booking", { qs: "id=" + encodeURIComponent(id) + "&k=" + encodeURIComponent(k) }); manage = { id, k, booking: r.booking, canCancel: r.canCancel }; }
+  try { const r = await api("booking", null, "&id=" + encodeURIComponent(id) + "&k=" + encodeURIComponent(k)); manage = { id, k, booking: r.booking, canCancel: r.canCancel }; syncMine(r.booking); }
   catch (e) { manage = { id, k, error: e.message }; }
   render();
 }
@@ -216,34 +292,38 @@ document.addEventListener("click", async (e) => {
   if (a === "open") { e.preventDefault(); history.pushState({}, "", el.getAttribute("href")); return openManage(el.dataset.id, el.dataset.k); }
   switch (a) {
     case "svc": sel.service = el.dataset.v; render(); break;
-    case "barber": sel.barber = el.dataset.v; render(); break;
+    case "barber": sel.barber = el.dataset.v; sel.date = null; render(); break;
     case "day": sel.date = el.dataset.v; render(); break;
     case "pick": sheet = { d: sel.date, m: +el.dataset.m }; renderSheet(); break;
     case "fast": sel.date = el.dataset.d; render(); sheet = { d: el.dataset.d, m: +el.dataset.m }; renderSheet(); break;
     case "close": if (!sending) { sheet = null; renderSheet(); } break;
-    case "confirm": if (!sending) confirm(); break;
-    case "again": case "book": done = null; manage = null; view = "book"; history.replaceState({}, "", "/"); render(); window.scrollTo(0, 0); break;
-    case "mine": done = null; manage = null; view = "mine"; history.replaceState({}, "", "/"); render(); window.scrollTo(0, 0); break;
+    case "confirm": if (!sending) confirmBook(); break;
+    case "book": done = null; manage = null; view = "book"; history.replaceState({}, "", "/" + SLUG); render(); window.scrollTo(0, 0); break;
+    case "mine": sheet = null; renderSheet(); done = null; manage = null; view = "mine"; history.replaceState({}, "", "/" + SLUG); render(); window.scrollTo(0, 0); break;
+    case "openDone": history.pushState({}, "", manageUrl(done.id, done.key)); openManage(done.id, done.key); done = null; break;
     case "ics": ics(done || manage.booking); break;
     case "copyLink": copyText(manageUrl(done.id, done.key), "Bağlantı kopyalandı"); break;
     case "askCancel": manage.ask = true; render(); break;
     case "noCancel": manage.ask = false; render(); break;
-    case "doCancel": try { const r = await api("cancel", { id: manage.id, k: manage.k }); manage.booking = r.booking; manage.canCancel = false; manage.ask = false; toast("Randevun iptal edildi"); load(); } catch (err) { toast(err.message); } render(); break;
+    case "doCancel": try { const r = await api("cancel", { id: manage.id, k: manage.k }); manage.booking = r.booking; manage.canCancel = false; manage.ask = false; syncMine(r.booking); toast("İptal edildi"); load(); } catch (err) { toast(err.message); } render(); break;
   }
 });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet && !sending) { sheet = null; renderSheet(); } if (e.key === "Enter" && sheet && e.target.tagName === "INPUT") { e.preventDefault(); if (!sending) confirm(); } });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet && !sending) { sheet = null; renderSheet(); } if (e.key === "Enter" && sheet && e.target.tagName === "INPUT") { e.preventDefault(); if (!sending) confirmBook(); } });
 window.addEventListener("popstate", () => { const p = new URLSearchParams(location.search); if (p.get("r")) openManage(p.get("r"), p.get("k")); else { manage = null; render(); } });
+setInterval(() => document.querySelectorAll("[data-until]").forEach(el => { const [d, t] = el.dataset.until.split(" "); el.textContent = until(d, t); }), 30000);
 
 async function load() {
-  try { const r = await api("init"); S = r; if (!sheet) render(); }
-  catch (e) { if (!S.cfg) $("app").innerHTML = `<div class="empty" style="margin-top:30px"><b>Bağlanılamadı.</b> İnternetini kontrol edip sayfayı yenile.</div>`; }
+  try { S = await api("init"); if (!sheet) render(); }
+  catch (e) { if (!S) $("app").innerHTML = `<div class="hero"><h1>Dükkân <span class="band">bulunamadı.</span></h1><p class="soft">${esc(e.message)}</p><div><a class="btn light" href="/">Ana sayfa</a></div></div>`; }
 }
 (async () => {
+  if (!SLUG) { $("mineBtn").hidden = true; return renderLanding(); }
   await load();
+  for (const x of myList().filter(y => y.open)) api("booking", null, "&id=" + encodeURIComponent(x.id) + "&k=" + encodeURIComponent(x.k)).then(r => { syncMine(r.booking); if (!sheet && view === "book" && !done && !manage) render(); }).catch(() => {});
   const p = new URLSearchParams(location.search);
-  if (p.get("r") && S.cfg) openManage(p.get("r"), p.get("k") || "");
+  if (p.get("r") && S) openManage(p.get("r"), p.get("k") || "");
   setInterval(() => { if (document.visibilityState === "visible" && !sheet && view === "book" && !done && !manage) load(); }, 30000);
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !sheet) load(); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !sheet && S) load(); });
 })();
 </script>
 </body>

@@ -12,6 +12,7 @@ http.createServer(async (req, res) => {
   }
   let p = path.join(root, decodeURIComponent(u.pathname));
   if (fs.existsSync(p) && fs.statSync(p).isDirectory()) p = path.join(p, "index.html");
+  if (!fs.existsSync(p) && /^\/[a-z0-9][a-z0-9-]{1,29}$/.test(u.pathname)) p = path.join(root, "index.html");  // same as vercel.json rewrite
   if (!fs.existsSync(p)) { res.statusCode = 404; return res.end("not found"); }
   res.setHeader("Content-Type", types[path.extname(p)] || "application/octet-stream"); fs.createReadStream(p).pipe(res);
 }).listen(process.env.PORT || 3000, () => console.log("http://localhost:" + (process.env.PORT || 3000)));

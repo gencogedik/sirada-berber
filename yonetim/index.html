@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sırada Yönetim</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f4f0e7">
+<meta name="color-scheme" content="light only">
+<link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="/assets/base.css?v=4">
+<style>
+.wrap { max-width: 980px }
+.auth { max-width: 400px; margin: 9vh auto 0; display: grid; gap: 18px }
+.auth h1 { font-size: 2.6rem }
+.mark { width: 44px; height: 44px; border-radius: 12px; background: var(--ink); display: grid; place-items: center }
+header.top { display: flex; align-items: center; gap: 12px; padding-block: 16px 10px; border-bottom: 1px solid var(--hair) }
+header.top b { font-family: var(--serif); font-weight: 400; font-size: 1.35rem; margin-right: auto }
+.ph { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; padding-block: 24px 12px }
+.ph h1 { font-size: clamp(2rem, 7vw, 2.8rem) }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-radius: 14px; background: var(--card); margin-bottom: 16px }
+.kpis > div { padding: 12px 14px; border-left: 1px solid var(--hair) } .kpis > div:first-child { border-left: 0 }
+.kpis b { display: block; font-family: var(--mono); font-size: 1.5rem }
+@media (max-width: 600px) { .kpis { grid-template-columns: 1fr 1fr } .kpis > div:nth-child(3) { border-left: 0 } .kpis > div:nth-child(n+3) { border-top: 1px solid var(--hair) } }
+.tbl { overflow-x: auto; border-top: 1px solid var(--ink) }
+table { width: 100%; border-collapse: collapse; font-size: .92rem; min-width: 760px }
+th { text-align: left; font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--soft); font-weight: 600; padding: 10px 8px; border-bottom: 1px solid var(--hair) }
+td { padding: 11px 8px; border-bottom: 1px solid var(--hair); vertical-align: top }
+td.n, th.n { text-align: right; font-family: var(--mono) }
+tr.off td { color: var(--soft) }
+.creds { border-radius: 14px; background: var(--band); color: var(--on-band); padding: 16px; display: grid; gap: 12px; margin-bottom: 18px }
+.creds table { min-width: 560px; font-family: var(--mono); font-size: .88rem }
+.creds th, .creds td { border-color: color-mix(in srgb, var(--on-band) 20%, transparent); color: var(--on-band) }
+.creds .btn { background: var(--on-band); color: var(--band) }
+.mini { display: flex; gap: 6px; flex-wrap: wrap }
+.inline { display: flex; gap: 8px; flex-wrap: wrap; align-items: end }
+.inline .fld { flex: 1 1 140px }
+</style>
+</head>
+<body>
+<div class="wrap" id="root"><div class="auth"><p class="soft">Yükleniyor…</p></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("on"), 3000); }
+async function call(action, data) {
+  const r = await fetch("/api/platform?action=" + action, data ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {});
+  let j = {}; try { j = await r.json(); } catch {}
+  if (r.status === 401 && !["login", "setup"].includes(action)) { admin = null; renderAuth("Oturum kapandı. Tekrar giriş yap."); }
+  if (!r.ok) throw new Error(j.error || "Bağlantı hatası.");
+  return j;
+}
+const MARK = '<svg width="24" height="24" viewBox="0 0 26 26"><g fill="none" stroke="#f6d24a" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="7" r="3.3"/><circle cx="6" cy="19" r="3.3"/><path d="M9 8.6 23 17M9 17.4 23 9"/></g></svg>';
+const day = (ts) => ts ? new Date(ts).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }) : "—";
+let admin = null, needsSetup = false, shops = null, made = null, reset = null, editSlug = null;
+
+function renderAuth(err) {
+  $("root").innerHTML = needsSetup
+    ? `<form class="auth" id="sf" novalidate><div class="mark">${MARK}</div><div><h1>Yönetici <span class="band">hesabı</span></h1><p class="soft" style="margin:8px 0 0">Sırada'yı berberlere satan kişinin hesabı. Dükkân hesaplarını buradan oluşturur, şifrelerini yenilersin. Bir kez kurulur.</p></div>
+      <label class="fld" for="u"><span>Kullanıcı adı</span><input id="u" autocapitalize="none" autocomplete="username"></label>
+      <label class="fld" for="p"><span>Şifre <span class="soft">(en az 10 karakter)</span></span><input id="p" type="password" autocomplete="new-password"></label>
+      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Yönetici hesabını kur</button></form>`
+    : `<form class="auth" id="lf" novalidate><div class="mark">${MARK}</div><div><h1>Sırada <span class="band">yönetim</span></h1></div>
+      <label class="fld" for="u"><span>Kullanıcı adı</span><input id="u" autocapitalize="none" autocomplete="username"></label>
+      <label class="fld" for="p"><span>Şifre</span><input id="p" type="password" autocomplete="current-password"></label>
+      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Giriş yap</button></form>`;
+  const f = $("sf") || $("lf");
+  f.onsubmit = async (e) => { e.preventDefault();
+    try { const r = await call(needsSetup ? "setup" : "login", { username: $("u").value, password: $("p").value }); admin = r.admin; needsSetup = false;
+      if (r.moved) toast("Eski dükkân verileri “" + r.moved + "” bağlantısına taşındı"); load(); } catch (x) { renderAuth(x.message); } };
+}
+async function load() { try { shops = (await call("shops")).shops; } catch (e) { toast(e.message); } render(); }
+function render() {
+  if (!admin) return renderAuth();
+  const list = shops || [], origin = location.origin;
+  const sold = list.filter(s => s.barbers > 0).length;
+  $("root").innerHTML = `<header class="top"><b>Sırada yönetim</b><span class="soft small">${esc(admin.username)}</span><button class="btn light sm" data-act="logout">Çıkış</button></header>
+  <div class="ph"><div><span class="lbl">Dükkân hesapları</span><h1>Dükkânlar</h1></div>
+    <form class="inline" id="cf" novalidate><label class="fld" for="cn"><span>Kaç dükkân</span><input id="cn" type="number" min="1" max="50" value="10"></label>
+      <label class="fld" for="cp"><span>Bağlantı öneki</span><input id="cp" value="berber" autocapitalize="none"></label><button class="btn" type="submit">Hesapları oluştur</button></form></div>
+  ${made ? `<div class="creds"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><b style="font-size:1.1rem">${made.length} yeni dükkân hesabı</b>
+      <span class="mini"><button class="btn sm" data-act="copyAll">Tümünü kopyala</button><button class="btn sm" data-act="csv">CSV indir</button><button class="btn sm" data-act="hideMade">Kapat</button></span></div>
+    <p style="margin:0;font-family:var(--sans);font-size:.9rem">Şifreler sadece şimdi görünür; kaydedilmez. Kopyala ya da indir, sonra sattığın berbere ilet.</p>
+    <div class="tbl" style="border-color:var(--on-band)"><table><thead><tr><th>Müşteri bağlantısı</th><th>Dükkân kodu</th><th>Kullanıcı adı</th><th>Şifre</th></tr></thead><tbody>
+      ${made.map(m => `<tr><td>${esc(origin + "/" + m.slug)}</td><td>${esc(m.slug)}</td><td>${esc(m.username)}</td><td style="user-select:all">${esc(m.password)}</td></tr>`).join("")}</tbody></table></div></div>` : ""}
+  ${reset ? `<div class="creds"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><b>Yeni sahip şifresi · ${esc(reset.slug)}</b><button class="btn sm" data-act="hideReset">Kapat</button></div>
+    <div style="font-family:var(--mono)">Dükkân kodu: ${esc(reset.slug)}<br>Kullanıcı adı: ${esc(reset.username)}<br>Şifre: <span style="user-select:all">${esc(reset.password)}</span></div>
+    <span class="mini"><button class="btn sm" data-act="copyReset">Kopyala</button></span></div>` : ""}
+  <div class="kpis"><div><span class="lbl">Dükkân</span><b>${list.length}</b></div><div><span class="lbl">Kullanımda</span><b>${sold}</b></div><div><span class="lbl">Açık randevu</span><b>${list.reduce((s, x) => s + x.open, 0)}</b></div><div><span class="lbl">Toplam randevu</span><b>${list.reduce((s, x) => s + x.bookings, 0)}</b></div></div>
+  <div class="tbl"><table><thead><tr><th>Dükkân</th><th>Bağlantı</th><th>Sahip girişi</th><th class="n">Usta</th><th class="n">Randevu</th><th>Son randevu</th><th>Not</th><th></th></tr></thead><tbody>
+    ${list.map(s => `<tr class="${s.disabled ? "off" : ""}"><td><b>${esc(s.name)}</b>${s.disabled ? ' <span class="tag iptal">Kapalı</span>' : s.barbers ? "" : ' <span class="tag mut">Kurulmadı</span>'}<div class="soft small">${day(s.createdAt)}</div></td>
+      <td>${editSlug === s.id ? `<form class="inline" data-slug="${s.id}" novalidate><input id="sl-${s.id}" value="${esc(s.slug)}" style="min-width:140px"><button class="btn sm" type="submit">Kaydet</button></form>` : `<a class="link mono" href="/${esc(s.slug)}" target="_blank" rel="noopener">/${esc(s.slug)}</a> <button class="link small soft" data-act="editSlug" data-id="${s.id}">değiştir</button>`}</td>
+      <td class="mono small">${esc(s.owner || "—")}</td><td class="n">${s.barbers}</td><td class="n">${s.bookings}${s.open ? ` <span class="soft">(${s.open} açık)</span>` : ""}</td><td>${day(s.last)}</td>
+      <td><input aria-label="Not" data-note="${s.id}" value="${esc(s.note)}" placeholder="Örn. Ahmet Bey, Kadıköy" style="min-width:160px;padding:7px 9px;font-size:.88rem"></td>
+      <td><div class="mini"><button class="btn light sm" data-act="reset" data-id="${s.id}" data-slug="${esc(s.slug)}">Sahip şifresini yenile</button><button class="btn light sm" data-act="toggle" data-id="${s.id}" data-d="${s.disabled ? 0 : 1}">${s.disabled ? "Aç" : "Kapat"}</button></div></td></tr>`).join("")
+      || `<tr><td colspan="8" class="soft">Henüz dükkân yok. Yukarıdan hesap oluştur.</td></tr>`}</tbody></table></div>
+  <p class="soft small">Berber kendi panelinden dükkân adını, saatlerini, hizmetlerini ve ustalarını ayarlar. Kapatılan dükkânın müşteri sayfası ve girişi çalışmaz; veriler silinmez.</p>`;
+}
+const credText = (rows) => rows.map(m => `Bağlantı: ${location.origin}/${m.slug}\nUsta girişi: ${location.origin}/usta\nDükkân kodu: ${m.slug}\nKullanıcı adı: ${m.username}\nŞifre: ${m.password}`).join("\n\n");
+async function copy(t) { try { await navigator.clipboard.writeText(t); toast("Kopyalandı"); } catch { prompt("Kopyala:", t); } }
+document.addEventListener("click", async (e) => {
+  const el = e.target.closest("[data-act]"); if (!el) return; const a = el.dataset.act, id = el.dataset.id;
+  switch (a) {
+    case "logout": await call("logout", {}).catch(() => {}); admin = null; renderAuth(); break;
+    case "copyAll": copy(credText(made)); break;
+    case "csv": { const csv = "baglanti,dukkan_kodu,kullanici_adi,sifre\n" + made.map(m => [location.origin + "/" + m.slug, m.slug, m.username, m.password].join(",")).join("\n");
+      const aEl = document.createElement("a"); aEl.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv" })); aEl.download = "sirada-dukkan-hesaplari.csv"; document.body.appendChild(aEl); aEl.click(); setTimeout(() => aEl.remove(), 300); break; }
+    case "hideMade": made = null; render(); break;
+    case "hideReset": reset = null; render(); break;
+    case "copyReset": copy(credText([reset])); break;
+    case "editSlug": editSlug = id; render(); break;
+    case "reset": if (el.dataset.sure) { try { const r = await call("resetOwner", { id }); reset = { ...r, slug: el.dataset.slug }; render(); window.scrollTo(0, 0); } catch (x) { toast(x.message); } } else { el.dataset.sure = "1"; el.textContent = "Eski şifre geçersiz olacak · Onayla"; } break;
+    case "toggle": try { await call("toggle", { id, disabled: el.dataset.d === "1" }); await load(); toast("Güncellendi"); } catch (x) { toast(x.message); } break;
+  }
+});
+document.addEventListener("submit", async (e) => {
+  const f = e.target; e.preventDefault();
+  if (f.id === "cf") { try { made = (await call("create", { count: +$("cn").value, prefix: $("cp").value })).made; await load(); window.scrollTo(0, 0); } catch (x) { toast(x.message); } }
+  if (f.dataset.slug) { const id = f.dataset.slug; try { await call("slug", { id, slug: $("sl-" + id).value }); editSlug = null; await load(); toast("Bağlantı değişti"); } catch (x) { toast(x.message); } }
+});
+document.addEventListener("change", async (e) => { const t = e.target; if (t.dataset.note) { try { await call("note", { id: t.dataset.note, note: t.value }); toast("Not kaydedildi"); } catch (x) { toast(x.message); } } });
+(async () => {
+  try { const r = await call("status"); admin = r.admin; needsSetup = r.needsSetup; } catch { $("root").innerHTML = `<div class="auth"><div class="empty"><b>Bağlanılamadı.</b> Sayfayı yenile.</div></div>`; return; }
+  admin ? load() : renderAuth();
+})();
+</script>
+</body>
+</html>
