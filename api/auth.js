@@ -1,4 +1,5 @@
-// Staff login, first-run shop setup, logout, password change.
+// Staff login, first-run shop setup, logout, password change, owner recovery.
+import crypto from "node:crypto";
 import { send, fail, body, query, ip, rateLimit, getCfg, setJSON, hgetJSON, hsetJSON, hallJSON, hashPass, checkPass,
   sessionCookie, clearCookie, currentUser, userView, normUser, clip, rid, DEFAULT_CFG, hasDb } from "./_lib.js";
 
@@ -33,6 +34,21 @@ export default async function handler(req, res) {
       const b = body(req);
       const u = await hgetJSON("users", normUser(b.username));
       if (!u || u.disabled || !checkPass(b.password || "", u)) return fail(res, 401, "Kullanıcı adı ya da şifre hatalı.");
+      return send(res, 200, { user: userView(u) }, { "Set-Cookie": sessionCookie(u) });
+    }
+    if (req.method === "POST" && a === "recover") {
+      // Owner recovery: the code lives only in the Vercel project's env vars (RESET_CODE), so only whoever controls Vercel can use it.
+      if (!(await rateLimit("recover:" + ip(req), 5, 3600))) return fail(res, 429, "Çok fazla deneme. 1 saat sonra tekrar dene.");
+      const code = process.env.RESET_CODE || "";
+      if (code.length < 8) return fail(res, 400, "Kurtarma kapalı. Vercel'de en az 8 karakterli RESET_CODE ortam değişkeni ekleyip yeniden dağıt.");
+      const b = body(req);
+      const given = Buffer.from(String(b.code || "")), want = Buffer.from(code);
+      if (given.length !== want.length || !crypto.timingSafeEqual(given, want)) return fail(res, 403, "Kurtarma kodu hatalı.");
+      const u = await hgetJSON("users", normUser(b.username));
+      if (!u) return fail(res, 404, "Bu kullanıcı adı yok.");
+      if (String(b.password || "").length < 8) return fail(res, 400, "Yeni şifre en az 8 karakter olmalı.");
+      Object.assign(u, hashPass(b.password), { ver: (u.ver || 1) + 1, disabled: false });
+      await hsetJSON("users", u.username, u);
       return send(res, 200, { user: userView(u) }, { "Set-Cookie": sessionCookie(u) });
     }
     if (req.method === "POST" && a === "logout") return send(res, 200, { ok: true }, { "Set-Cookie": clearCookie() });

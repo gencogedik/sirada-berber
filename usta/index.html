@@ -116,6 +116,7 @@ let sheet = null, busy = false;
 let customers = null, custQ = "";
 let team = null, draft = null;
 let pending = false;
+let forgot = false;
 
 /* ---------- auth screens ---------- */
 function renderAuth(err) {
@@ -136,12 +137,24 @@ function renderAuth(err) {
         me = j.user; needsSetup = false; boot2(); } catch (x) { renderAuth(x.message); } };
     return;
   }
+  if (forgot) {
+    r.innerHTML = `<form class="auth" id="recF" novalidate><div class="mark">${SCISSORS}</div>
+      <div><h1>Şifre <span class="band">yenile</span></h1><p class="soft" style="margin:8px 0 0">Usta isen yeni şifreni dükkân sahibinden iste; o Ekip bölümünden değiştirir. Dükkân sahibiysen Vercel'de belirlediğin <b>RESET_CODE</b> kurtarma koduyla yeni şifre koy.</p></div>
+      <label class="fld" for="rUser"><span>Kullanıcı adı</span><input id="rUser" autocomplete="username" autocapitalize="none"></label>
+      <label class="fld" for="rCode"><span>Kurtarma kodu</span><input id="rCode" type="password" autocomplete="off"></label>
+      <label class="fld" for="rPass"><span>Yeni şifre <span class="soft">(en az 8 karakter)</span></span><input id="rPass" type="password" autocomplete="new-password"></label>
+      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Şifreyi yenile ve gir</button>
+      <button type="button" class="link small" data-act="backLogin">Girişe dön</button></form>`;
+    $("recF").onsubmit = async (e) => { e.preventDefault();
+      try { const j = await call("/api/auth?action=recover", { username: $("rUser").value, code: $("rCode").value, password: $("rPass").value }); forgot = false; me = j.user; toast("Şifren yenilendi"); boot2(); } catch (x) { renderAuth(x.message); } };
+    return;
+  }
   r.innerHTML = `<form class="auth" id="loginF" novalidate><div class="mark">${SCISSORS}</div>
     <div><h1>Usta <span class="band">girişi</span></h1><p class="soft" style="margin:8px 0 0">Kullanıcı adını ve şifreni dükkân sahibinden al.</p></div>
     <label class="fld" for="lUser"><span>Kullanıcı adı</span><input id="lUser" autocomplete="username" autocapitalize="none" required></label>
     <label class="fld" for="lPass"><span>Şifre</span><input id="lPass" type="password" autocomplete="current-password" required></label>
     ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Giriş yap</button>
-    <a class="link small soft" href="/">Müşteri randevu sayfası</a></form>`;
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><button type="button" class="link small" data-act="forgot">Şifremi unuttum</button><a class="link small soft" href="/">Müşteri randevu sayfası</a></div></form>`;
   $("loginF").onsubmit = async (e) => { e.preventDefault();
     try { const j = await call("/api/auth?action=login", { username: $("lUser").value, password: $("lPass").value }); me = j.user; boot2(); } catch (x) { renderAuth(x.message); } };
   setTimeout(() => $("lUser") && $("lUser").focus(), 30);
@@ -413,6 +426,8 @@ document.addEventListener("click", async (e) => {
     case "delSvc": if (draft.services.length > 1) draft.services = draft.services.filter(s => s.id !== v); else toast("En az bir hizmet kalmalı"); render(true); break;
     case "resetCfg": draft = null; render(true); break;
     case "saveCfg": try { const r = await call("/api/admin?action=config", { cfg: draft }); A.cfg = r.cfg; draft = null; toast("Ayarlar kaydedildi"); } catch (x) { toast(x.message); } render(true); break;
+    case "forgot": forgot = true; renderAuth(); break;
+    case "backLogin": forgot = false; renderAuth(); break;
     case "logout": await call("/api/auth?action=logout", {}).catch(() => {}); me = null; A = null; renderAuth(); break;
   }
 });

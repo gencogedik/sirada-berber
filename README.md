@@ -19,6 +19,7 @@
 İsteğe bağlı ortam değişkenleri:
 
 - `SETUP_CODE` — verilirse ilk kurulumda bu kod istenir (kurulumu birinin senden önce yapmasını engeller).
+- `RESET_CODE` — sahibin şifresini unutursa: en az 8 karakterli bir kod belirle, yeniden dağıt, `/usta` → **Şifremi unuttum** ile bu kodla yeni şifre koy. Sonra değişkeni silebilirsin.
 - `SESSION_SECRET` — oturum imzası için gizli anahtar. Verilmezse veritabanı anahtarından türetilir.
 
 ## Roller
