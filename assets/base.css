@@ -9,9 +9,8 @@
   --r: 10px;
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) { :root {
-  --paper: #1b1a17; --card: #23211d; --ink: #f2ede3; --soft: #a59e90; --hair: #34312b; --hair-2: #4a463e;
-  --band: #ebc83f; --on-band: #1d1b19; --ok: #a6c98d; --bad: #f09479; --warn: #e2ad62; --scrim: rgba(0, 0, 0, .6); color-scheme: dark } }
+/* Always the paper look: the brand is cream stock, so the app does not follow the device's dark mode. */
+html { color-scheme: light; background: var(--paper) }
 
 * { box-sizing: border-box }
 html { -webkit-text-size-adjust: 100% }
