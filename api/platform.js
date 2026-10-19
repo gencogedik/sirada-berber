@@ -29,11 +29,12 @@ export default handle(async (req, res) => {
     return send(res, 200, { admin: { username: ad.username } }, { "Set-Cookie": adminCookie(ad) });
   }
   if (req.method === "POST" && a === "recover") {   // forgot password: needs RESET_CODE set in Vercel env
-    if (!(await rateLimit("precover:" + ip(req), 5, 3600))) return fail(res, 429, "Çok fazla deneme. 1 saat sonra tekrar dene.");
     const code = String(process.env.RESET_CODE || "");
     if (code.length < 8) return fail(res, 403, "Kurtarma kapalı. Vercel'de en az 8 karakterli RESET_CODE ortam değişkeni ekleyip yeniden dağıt.");
-    const b = body(req), given = crypto.createHash("sha256").update(String(b.code || "")).digest(), want = crypto.createHash("sha256").update(code).digest();
-    if (!crypto.timingSafeEqual(given, want)) return fail(res, 401, "Kurtarma kodu hatalı.");
+    const rk = "rl:rcv:" + ip(req);   // only wrong codes count
+    if (Number(await redis("GET", rk) || 0) >= 8) return fail(res, 429, "Çok fazla hatalı kod denendi. 15 dakika sonra tekrar dene.");
+    const b = body(req), given = crypto.createHash("sha256").update(String(b.code || "").trim()).digest(), want = crypto.createHash("sha256").update(code.trim()).digest();
+    if (!crypto.timingSafeEqual(given, want)) { if (Number(await redis("INCR", rk)) === 1) await redis("EXPIRE", rk, 900); return fail(res, 401, "Kurtarma kodu hatalı."); }
     const username = normUser(b.username);
     if (username.length < 3) return fail(res, 400, "Kullanıcı adı en az 3 harf olmalı (a-z, 0-9).");
     if (String(b.password || "").length < 10) return fail(res, 400, "Yeni şifre en az 10 karakter olmalı.");
