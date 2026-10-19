@@ -1,15 +1,36 @@
 {
-  "name": "Sırada · Usta paneli",
+  "id": "/usta",
+  "name": "Sırada Usta",
   "short_name": "Sırada Usta",
+  "description": "Berber randevu talepleri, ajanda ve bildirimler",
+  "lang": "tr",
+  "dir": "ltr",
   "start_url": "/usta",
   "scope": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#f4f0e7",
   "theme_color": "#f4f0e7",
-  "lang": "tr",
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "icons": [
-    { "src": "/assets/app-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/assets/app-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/assets/app-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/assets/app-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/app-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/app-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }
