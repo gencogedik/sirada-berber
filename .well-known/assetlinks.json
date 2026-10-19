@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.sirada.usta",
+        "sha256_cert_fingerprints": ["E3:FB:E0:9E:71:2E:BC:37:28:82:09:0A:49:84:BE:7D:49:66:9E:9A:B7:88:92:B4:77:EF:EA:EA:B2:C9:4D:C7"]
+      }
+    }]
