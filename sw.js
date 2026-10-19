@@ -5,7 +5,7 @@ self.addEventListener("push", (e) => {
   let d = {}; try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
   e.waitUntil((async () => {
     await self.registration.showNotification(d.title || "Sırada", { body: d.body || "", tag: d.tag || undefined, renotify: !!d.tag,
-      icon: "/assets/app-192.png", badge: "/assets/app-192.png", data: { url: d.url || "/usta" } });
+      icon: "/assets/app-192.png", badge: "/assets/badge-96.png", data: { url: d.url || "/usta" } });
     const cs = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     cs.forEach(c => c.postMessage({ type: "push" }));
   })());
