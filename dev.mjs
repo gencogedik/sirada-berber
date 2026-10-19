@@ -1,7 +1,7 @@
 // Local preview without Vercel: node dev.mjs → http://localhost:3000 (in-memory data unless KV env vars are set)
 import http from "node:http"; import fs from "node:fs"; import path from "node:path"; import { fileURLToPath } from "node:url";
 const root = path.dirname(fileURLToPath(import.meta.url));
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml" };
+const types = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".js": "text/javascript", ".svg": "image/svg+xml", ".png": "image/png", ".webmanifest": "application/manifest+json" };
 http.createServer(async (req, res) => {
   const u = new URL(req.url, "http://x");
   if (u.pathname.startsWith("/api/")) {

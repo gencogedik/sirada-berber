@@ -155,6 +155,7 @@ export default handle(async (req, res) => {
     if (await hgetJSON(UK, nu)) return fail(res, 400, "Bu kullanıcı adı bu dükkânda zaten var.");
     await redis("HDEL", UK, u.username);
     await hsetJSON(UK, nu, { ...u, username: nu, ver: (u.ver || 1) + 1 });
+    const subs = await hgetJSON(K(s.id, "push"), u.username); if (subs) { await hsetJSON(K(s.id, "push"), nu, subs); await redis("HDEL", K(s.id, "push"), u.username); }
     return send(res, 200, { ok: true });
   }
   if (a === "userName") {
@@ -181,7 +182,7 @@ export default handle(async (req, res) => {
     const u = await getUser(); if (!u) return;
     const users = Object.values(await hallJSON(UK));
     if (u.role === "sahip" && users.filter(x => x.role === "sahip").length < 2) return fail(res, 400, "Dükkânın tek sahip hesabı silinemez; önce şifresini ya da kullanıcı adını değiştir.");
-    await redis("HDEL", UK, u.username);
+    await redis("HDEL", UK, u.username); await redis("HDEL", K(s.id, "push"), u.username);
     return send(res, 200, { ok: true });
   }
   if (a === "userAdd") {      // add another login (owner or usta) to a shop

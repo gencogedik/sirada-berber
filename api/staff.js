@@ -1,7 +1,7 @@
 // Barber panel API. Ustas see and change only their own chair; the shop owner sees every chair.
 import { send, fail, body, query, handle, getCfg, saveCfg, hallJSON, hgetJSON, hsetJSON, redis, currentUser, userView, createBooking, closeBooking,
   lockRange, unlockRange, claimPhone, releasePhone, toMin, fmt, isDate, trNow, addDays, slotOk, sched, barberView, clip, rid, K, OPEN, isOpen,
-  STEPS, UNIT, startTs } from "./_lib.js";
+  STEPS, UNIT, startTs, vapid, savePushSub, dropPushSub, pushCount, notifyUsers } from "./_lib.js";
 
 const clean = ({ keyHash, ...b }) => b;
 const timeOk = (s) => !s || !isNaN(toMin(s));
@@ -13,6 +13,11 @@ export default handle(async (req, res) => {
   const mine = (barberId) => owner || barberId === u.barberId;
   const q = query(req), a = q.action, c = await getCfg(S);
   const BK = K(S, "bk"), BL = K(S, "bl");
+  // phone notifications
+  if (req.method === "GET" && a === "pushKey") return send(res, 200, { key: vapid().publicKey, devices: await pushCount(S, u.username) });
+  if (req.method === "POST" && a === "pushOn") { if (u.imp) return fail(res, 400, "Yönetici modunda bildirim açılamaz."); const ok = await savePushSub(S, u.username, body(req).sub); return ok ? send(res, 200, { ok: true, devices: await pushCount(S, u.username) }) : fail(res, 400, "Bildirim kaydı alınamadı."); }
+  if (req.method === "POST" && a === "pushOff") { await dropPushSub(S, u.username, body(req).endpoint ? String(body(req).endpoint) : null); return send(res, 200, { ok: true }); }
+  if (req.method === "POST" && a === "pushTest") { const n = await notifyUsers(S, [u.username], { title: "Sırada bildirimleri açık", body: "Yeni randevu talepleri bu cihaza böyle gelecek.", tag: "test", url: "/usta" }); return n ? send(res, 200, { sent: n }) : fail(res, 400, "Bu cihaza bildirim gönderilemedi. Bildirimleri yeniden aç."); }
 
   if (req.method === "GET" && a === "agenda") {
     const now = trNow();

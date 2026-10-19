@@ -300,7 +300,49 @@ export async function purgeShop(shop) {
   const bk = await hallJSON(K(shop.id, "bk")), bl = await hallJSON(K(shop.id, "bl"));
   for (const b of Object.values(bk)) { if (OPEN.has(b.status)) await unlockRange(shop.id, b.date, b.barberId, toMin(b.time), b.dur, b.id); await redis("DEL", actKey(shop.id, b.barberId, b.phone)); }
   for (const b of Object.values(bl)) await unlockRange(shop.id, b.date, b.barberId, toMin(b.time), b.dur, "blk" + b.id);
-  await redis("DEL", K(shop.id, "cfg"), K(shop.id, "users"), K(shop.id, "bk"), K(shop.id, "bl"));
+  await redis("DEL", K(shop.id, "cfg"), K(shop.id, "users"), K(shop.id, "bk"), K(shop.id, "bl"), K(shop.id, "push"));
   if (shop.slug) { const cur = await redis("HGET", "slugs", shop.slug); if (cur === shop.id) await redis("HDEL", "slugs", shop.slug); }
   await redis("HDEL", "shops", shop.id);
+}
+
+/* ================= phone notifications (Web Push) ================= */
+// VAPID keys are derived from the server secret, so nothing extra needs to be set in Vercel.
+let _vapid = null;
+export function vapid() {
+  if (_vapid) return _vapid;
+  const priv = crypto.createHmac("sha256", SECRET).update("sirada-vapid-v1").digest();
+  const ec = crypto.createECDH("prime256v1"); ec.setPrivateKey(priv);
+  return (_vapid = { publicKey: ec.getPublicKey().toString("base64url"), privateKey: priv.toString("base64url") });
+}
+const PK = (shop) => K(shop, "push");
+export async function savePushSub(shop, username, sub) {
+  if (!sub || typeof sub.endpoint !== "string" || !/^https:\/\//.test(sub.endpoint) || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) return false;
+  const list = ((await hgetJSON(PK(shop), username)) || []).filter(x => x.endpoint !== sub.endpoint);
+  list.unshift({ endpoint: sub.endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) }, at: Date.now() });
+  await hsetJSON(PK(shop), username, list.slice(0, 6));
+  return true;
+}
+export async function dropPushSub(shop, username, endpoint) {
+  const list = ((await hgetJSON(PK(shop), username)) || []).filter(x => !endpoint || x.endpoint !== endpoint);
+  if (list.length) await hsetJSON(PK(shop), username, list); else await redis("HDEL", PK(shop), username);
+}
+export async function pushCount(shop, username) { return ((await hgetJSON(PK(shop), username)) || []).length; }
+// send to the usta who owns the chair and to every shop owner
+export async function notifyShop(shop, barberId, payload) {
+  const users = Object.values(await hallJSON(K(shop, "users")));
+  return notifyUsers(shop, [...new Set(users.filter(u => !u.disabled && (u.role === "sahip" || (barberId && u.barberId === barberId))).map(u => u.username))], payload);
+}
+export async function notifyUsers(shop, to, payload) {
+  try {
+    if (!to.length) return 0;
+    const { default: webpush } = await import("web-push");
+    const v = vapid(); webpush.setVapidDetails("mailto:destek@sirada.app", v.publicKey, v.privateKey);
+    const body = JSON.stringify(payload); let sent = 0;
+    await Promise.race([Promise.allSettled(to.map(async (un) => {
+      const subs = (await hgetJSON(PK(shop), un)) || []; const dead = [];
+      await Promise.allSettled(subs.map(s => webpush.sendNotification(s, body, { TTL: 3600, urgency: "high" }).then(() => sent++).catch(e => { if (e.statusCode === 404 || e.statusCode === 410) dead.push(s.endpoint); })));
+      if (dead.length) { const keep = subs.filter(s => !dead.includes(s.endpoint)); if (keep.length) await hsetJSON(PK(shop), un, keep); else await redis("HDEL", PK(shop), un); }
+    })), new Promise(r => setTimeout(r, 4500))]);
+    return sent;
+  } catch (e) { console.error("push", e); return 0; }
 }

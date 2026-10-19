@@ -1,4 +1,5 @@
 // Customer-facing API: no login. Every call names a shop by its link (?shop=<slug>).
+import { notifyShop } from "./_lib.js";
 import { send, fail, body, query, ip, rateLimit, handle, getCfg, publicCfg, hallJSON, hgetJSON, createBooking, closeBooking, customerView,
   trNow, addDays, sha, startTs, hasDb, shopBySlug, K, OPEN } from "./_lib.js";
 
@@ -25,6 +26,8 @@ export default handle(async (req, res) => {
     if (!(await rateLimit("book:" + ip(req), 12, 3600))) return fail(res, 429, "Çok fazla deneme. Biraz sonra tekrar dene.");
     const r = await createBooking(shop.id, c, body(req), { source: "online" });
     if (r.error) return fail(res, r.code === "taken" ? 409 : r.code === "open" ? 423 : 400, r.error, { code: r.code || null });
+    const nb = r.booking;
+    await notifyShop(shop.id, nb.barberId, { title: "Yeni randevu talebi", body: `${nb.name} · ${nb.serviceName} · ${trDay(nb.date)} ${nb.time}${c.barbers.length > 1 ? " · " + ((c.barbers.find(x => x.id === nb.barberId) || {}).name || "") : ""}`, tag: "bk-" + nb.id, url: "/usta" });
     return send(res, 200, { booking: customerView(r.booking, c), key: r.key });
   }
   if (req.method === "POST" && a === "cancel") {
@@ -34,9 +37,11 @@ export default handle(async (req, res) => {
     if (!OPEN.has(bk.status)) return send(res, 200, { booking: customerView(bk, c) });
     if (!canCancel(bk, c)) return fail(res, 400, `İptal için en geç ${c.cancelHours} saat önce haber vermelisin. Dükkânı ara.`);
     await closeBooking(shop.id, bk, "iptal", "musteri");
+    await notifyShop(shop.id, bk.barberId, { title: "Randevu iptal edildi", body: `${bk.name} · ${trDay(bk.date)} ${bk.time} randevusunu iptal etti. Saat boşaldı.`, tag: "bk-" + bk.id, url: "/usta" });
     return send(res, 200, { booking: customerView(bk, c) });
   }
   return fail(res, 404, "Bilinmeyen istek.");
 });
 // A pending request can always be withdrawn; an accepted one only up to the shop's limit.
+const trDay = (d) => { const x = new Date(d + "T12:00:00Z"); return ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"][x.getUTCDay()] + " " + x.getUTCDate() + " " + ["Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara"][x.getUTCMonth()]; };
 function canCancel(bk, c) { if (bk.status === "talep") return startTs(bk.date, bk.time) > Date.now(); return bk.status === "onayli" && startTs(bk.date, bk.time) - Date.now() > Number(c.cancelHours || 0) * 3600e3; }

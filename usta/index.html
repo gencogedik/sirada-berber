@@ -8,6 +8,12 @@
 <meta name="theme-color" content="#f4f0e7">
 <meta name="color-scheme" content="light only">
 <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+<link rel="manifest" href="/usta/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/assets/app-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sırada Usta">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="/assets/base.css?v=4">
@@ -242,6 +248,7 @@ function vAgenda() {
         <label class="fld rmsg" for="rm-${p.id}"><span>Müşteriye not <span class="soft">(isteğe bağlı · onay ya da redle birlikte gider)</span></span><input id="rm-${p.id}" data-rm="${p.id}" maxlength="160" value="${esc(reqMsg[p.id] || "")}" placeholder="${rejectAsk === p.id ? "Örn. o saatte doluyum, 16:00 uygun" : "Örn. 5 dk erken gel"}"></label>
         ${rejectAsk === p.id ? `<div class="line" style="margin-top:8px"><span class="soft small">Talep reddedilsin mi?</span><button class="btn light sm" data-act="rejNo">Vazgeç</button><button class="btn danger sm" data-act="rejYes" data-id="${p.id}">Evet, reddet</button></div>` : ""}</div>
       <div class="q">${rejectAsk === p.id ? "" : `<button class="btn sm" data-act="approve" data-id="${p.id}">Onayla</button><button class="btn light sm" data-act="rejAsk" data-id="${p.id}">Reddet</button>`}</div></div>`).join("")}</div>` : ""}
+  ${pushCard(true)}
   <div class="days">${strip.map(d => `<button class="day" data-act="day" data-v="${d}" aria-pressed="${d === date}">${A.counts[d] ? `<span class="cnt">${A.counts[d]}</span>` : ""}<span class="dn">${dshort(d)}</span><span class="dd">${dnum(d)}</span><span class="dm">${dmon(d)}</span></button>`).join("")}
     <label class="day" style="cursor:pointer" title="Başka gün"><span class="dn">Diğer</span><span class="dd">…</span><input type="date" id="pick" value="${date}" style="position:absolute;inset:0;opacity:0;cursor:pointer" aria-label="Gün seç"></label></div>
   ${owner() && barbers().length > 1 ? `<div class="tgl" style="margin-top:8px"><button data-act="filter" data-v="all" aria-pressed="${filter === "all"}">Tüm ustalar</button>${barbers().map(b => `<button data-act="filter" data-v="${b.id}" aria-pressed="${filter === b.id}">${esc(b.name)}</button>`).join("")}</div>` : ""}
@@ -447,12 +454,68 @@ function readDraft() {
   draft.services.forEach(s => { if ($("sN-" + s.id)) { s.name = v("sN-" + s.id); s.dur = +v("sD-" + s.id); s.price = Math.max(0, Math.round(+v("sP-" + s.id) || 0)); } });
 }
 
+/* ---------- phone notifications ---------- */
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const standalone = () => !!(navigator.standalone || (window.matchMedia && matchMedia("(display-mode: standalone)").matches));
+let pushOn = false, pushBusy = false;
+function pushState() {
+  if (!("serviceWorker" in navigator)) return "unsupported";
+  if (isIOS && !standalone()) return "ios-install";
+  if (!("PushManager" in window) || !("Notification" in window)) return "unsupported";
+  if (Notification.permission === "denied") return "denied";
+  return pushOn ? "on" : "off";
+}
+const b64u = (s) => { const p = "=".repeat((4 - s.length % 4) % 4), r = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(r, ch => ch.charCodeAt(0)); };
+async function swReg() { return navigator.serviceWorker.register("/sw.js", { scope: "/" }); }
+async function pushSync() {   // on start: keep this device's subscription linked to the signed-in usta
+  try {
+    if (!("serviceWorker" in navigator)) return;
+    const reg = await swReg();
+    if (!("PushManager" in window) || !window.Notification || Notification.permission !== "granted" || (me && me.imp)) return;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) { await call("/api/staff?action=pushOn", { sub: sub.toJSON() }); pushOn = true; if (page === "hesap" || page === "ajanda") render(true); }
+  } catch {}
+}
+async function pushEnable() {
+  if (pushBusy) return; pushBusy = true;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") { toast(perm === "denied" ? "Bildirim izni verilmedi. Telefon ayarlarından izin verebilirsin." : "Bildirim izni verilmedi."); return; }
+    const reg = await swReg(); await navigator.serviceWorker.ready;
+    const { key } = await call("/api/staff?action=pushKey");
+    let sub = await reg.pushManager.getSubscription();
+    if (sub) { const cur = sub.options && sub.options.applicationServerKey; if (cur && btoa(String.fromCharCode(...new Uint8Array(cur))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") !== key) { await sub.unsubscribe(); sub = null; } }
+    if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(key) });
+    await call("/api/staff?action=pushOn", { sub: sub.toJSON() });
+    pushOn = true; lsSet("push_hide", ""); toast("Bildirimler açık");
+    try { await call("/api/staff?action=pushTest", {}); } catch {}
+  } catch (x) { toast(x.message || "Bildirim açılamadı."); } finally { pushBusy = false; render(true); }
+}
+async function pushDisable() {
+  try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription();
+    await call("/api/staff?action=pushOff", { endpoint: sub ? sub.endpoint : "" }); if (sub) await sub.unsubscribe(); } catch {}
+  pushOn = false; toast("Bu cihazda bildirimler kapandı"); render(true);
+}
+function pushCard(inAgenda) {
+  const st = pushState();
+  if (inAgenda && (st === "on" || st === "unsupported" || st === "denied" || lsGet("push_hide") === "1" || (me && me.imp))) return "";
+  const head = `<h2 style="margin:0">Telefon bildirimleri</h2>`;
+  const body = st === "on" ? `<p class="soft" style="margin:6px 0 10px">Açık. Yeni randevu talebi ya da iptal gelince bu cihaza bildirim düşer.</p><div class="acts"><button class="btn light sm" data-act="pushTest">Deneme bildirimi gönder</button><button class="btn light sm" data-act="pushOff">Bu cihazda kapat</button></div>`
+    : st === "ios-install" ? `<p style="margin:6px 0 4px">iPhone'da bildirim için paneli ana ekrana ekle:</p><ol class="soft" style="margin:0 0 6px;padding-left:20px;line-height:1.6"><li>Safari'de alttaki <b>Paylaş</b> düğmesine bas (kare ve yukarı ok).</li><li><b>Ana Ekrana Ekle</b>'yi seç.</li><li>Ana ekrandaki <b>Sırada Usta</b> simgesinden aç ve buradan bildirimleri aç.</li></ol>`
+    : st === "denied" ? `<p class="soft" style="margin:6px 0 0">Bu tarayıcıda bildirim izni kapalı. Telefonun ayarlarından bu site için bildirimlere izin ver, sonra sayfayı yenile.</p>`
+    : st === "unsupported" ? `<p class="soft" style="margin:6px 0 0">Bu tarayıcı bildirim desteklemiyor. Android'de Chrome, iPhone'da Safari kullan.</p>`
+    : `<p class="soft" style="margin:6px 0 10px">Yeni randevu talebi geldiğinde telefonuna bildirim düşsün.</p><div class="acts"><button class="btn sm" data-act="pushOn">Bildirimleri aç</button></div>`;
+  return `<div class="note pushcard" style="margin-top:16px${inAgenda ? ";box-shadow:inset 0 0 0 1.5px var(--band)" : ""}">${inAgenda ? `<button class="link small soft" data-act="pushHide" style="float:right">Sonra</button>` : ""}${head}${body}</div>`;
+}
+if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.type === "push" && me && page === "ajanda" && !sheet && !typing()) loadAgenda(true); });
+
 /* ---------- account ---------- */
 function vAccount() {
   const link = location.origin + "/" + shopSlug;
   return `<div class="ph"><div><span class="lbl">${owner() ? "Dükkân sahibi" : "Usta"} · ${esc(shopSlug)}</span><h1>Hesabım</h1></div></div>
     <div class="rows" style="max-width:520px"><div><span>Kullanıcı adı</span><span class="mono">${esc(me.username)}</span></div><div><span>Dükkân kodu</span><span class="mono">${esc(shopSlug)}</span></div></div>
     <div class="linkbox" style="margin-top:12px;max-width:520px"><span class="mono">${esc(link)}</span><button class="btn light sm" data-act="copy" data-v="${esc(link)}">Bağlantıyı kopyala</button></div>
+    <div style="max-width:520px">${me.imp ? "" : pushCard(false)}</div>
     <form class="sec" id="nmF" novalidate style="max-width:520px"><h2>Adım</h2><div class="line"><label class="fld" for="nName"><span>Görünen ad</span><input id="nName" maxlength="40" value="${esc(me.name)}"></label><button class="btn light" type="submit">Kaydet</button></div></form>
     <form class="sec" id="pwF" novalidate style="max-width:520px"><h2>Şifre değiştir</h2>
       <label class="fld" for="pOld"><span>Mevcut şifre</span><input id="pOld" type="password" autocomplete="current-password"></label>
@@ -477,6 +540,10 @@ document.addEventListener("click", async (e) => {
     case "open": openId = openId === v ? null : v; cancelAsk = null; render(true); break;
     case "approve": { const m = (($("rm-" + id) || {}).value || reqMsg[id] || "").trim(); delete reqMsg[id]; await act("/api/staff?action=approve", { id, msg: m }, m ? "Onaylandı, notun müşteriye gitti" : "Onaylandı"); break; }
     case "rejAsk": { const i = $("rm-" + id); if (i) reqMsg[id] = i.value; rejectAsk = id; render(true); setTimeout(() => $("rm-" + id) && $("rm-" + id).focus(), 20); break; }
+    case "pushOn": await pushEnable(); break;
+    case "pushOff": await pushDisable(); break;
+    case "pushTest": try { await call("/api/staff?action=pushTest", {}); toast("Deneme bildirimi gönderildi"); } catch (x) { toast(x.message); } break;
+    case "pushHide": lsSet("push_hide", "1"); render(true); break;
     case "rejNo": rejectAsk = null; render(true); break;
     case "rejYes": { const r = (($("rm-" + id) || {}).value || reqMsg[id] || "").trim(); delete reqMsg[id]; rejectAsk = null; await act("/api/staff?action=reject", { id, reason: r }, "Reddedildi, saat açıldı"); break; }
     case "st": await act("/api/staff?action=status", { id, status: v }, ST[v] + " olarak işaretlendi"); break;
@@ -506,7 +573,8 @@ document.addEventListener("click", async (e) => {
     case "resetCfg": draft = null; render(true); break;
     case "saveCfg": try { const r = await call("/api/admin?action=config", { cfg: draft }); shopSlug = r.slug; lsSet("sirada_shop", shopSlug); draft = null; toast("Ayarlar kaydedildi"); await loadAgenda(true); } catch (x) { toast(x.message); } render(true); break;
     case "copy": try { await navigator.clipboard.writeText(v); toast("Kopyalandı"); } catch { prompt("Kopyala:", v); } break;
-    case "logout": await call("/api/auth?action=logout", {}).catch(() => {}); me = null; A = null; renderAuth(); break;
+    case "logout": if (pushOn && !me.imp) { try { const reg = await navigator.serviceWorker.getRegistration(); const sub = reg && await reg.pushManager.getSubscription(); if (sub) await call("/api/staff?action=pushOff", { endpoint: sub.endpoint }); } catch {} } pushOn = false;
+      await call("/api/auth?action=logout", {}).catch(() => {}); me = null; A = null; renderAuth(); break;
   }
 });
 document.addEventListener("change", (e) => {
@@ -534,7 +602,7 @@ document.addEventListener("submit", async (e) => {
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet && !busy) { sheet = null; renderSheet(); } });
 
-async function boot2() { page = "ajanda"; date = null; A = null; range = null; render(true); await loadAgenda(true); }
+async function boot2() { page = "ajanda"; date = null; A = null; range = null; render(true); pushSync(); await loadAgenda(true); }
 (async () => {
   try { const r = await call("/api/auth?action=me"); me = r.user; if (r.shop) { shopSlug = r.shop.slug; lsSet("sirada_shop", shopSlug); } } catch { $("root").innerHTML = `<div class="auth"><div class="empty"><b>Bağlanılamadı.</b> Sayfayı yenile.</div></div>`; return; }
   if (!me) return renderAuth();

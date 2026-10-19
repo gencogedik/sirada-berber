@@ -10,7 +10,25 @@ subprocess.run(["redis-cli", "-p", str(RPORT), "flushall"], stdout=subprocess.DE
 # legacy single-shop data, to check it is moved into the new structure
 legacy_cfg = {"shopName": "Genco Berber", "barbers": [{"id": "bx1", "name": "Genco"}], "closed": [1], "open": "09:00", "close": "20:00", "services": [{"id": "s1", "name": "Saç kesimi", "dur": 30, "price": 400}]}
 subprocess.run(["redis-cli", "-p", str(RPORT), "set", "cfg", json.dumps(legacy_cfg)], stdout=subprocess.DEVNULL)
-srv = subprocess.Popen(["node", "dev.mjs"], cwd=ROOT, env={**os.environ, "PORT": str(PORT), "REDIS_URL": f"redis://127.0.0.1:{RPORT}", "RESET_CODE": "kurtarma-123"}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+# fake push service (HTTPS) to check that phone notifications are sent
+import ssl, threading, http.server, base64
+PUSHDIR = "/tmp/claude-0/pushsrv"; os.makedirs(PUSHDIR, exist_ok=True)
+subprocess.run(["openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1", "-nodes", "-keyout", PUSHDIR + "/k.pem", "-out", PUSHDIR + "/c.pem", "-days", "1", "-subj", "/CN=localhost"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+pushed = []
+class PH(http.server.BaseHTTPRequestHandler):
+    def do_POST(self):
+        n = int(self.headers.get("Content-Length") or 0); self.rfile.read(n)
+        pushed.append({"path": self.path, "enc": self.headers.get("Content-Encoding"), "auth": (self.headers.get("Authorization") or "")[:6]})
+        self.send_response(410 if self.path.startswith("/gone") else 201); self.end_headers()
+    def log_message(self, *a): pass
+PPORT = 3443
+phs = http.server.ThreadingHTTPServer(("127.0.0.1", PPORT), PH)
+sc = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); sc.load_cert_chain(PUSHDIR + "/c.pem", PUSHDIR + "/k.pem"); phs.socket = sc.wrap_socket(phs.socket, server_side=True)
+threading.Thread(target=phs.serve_forever, daemon=True).start()
+def fake_sub(path):
+    pub = subprocess.run(["node", "-e", "const c=require('crypto').createECDH('prime256v1');c.generateKeys();process.stdout.write(c.getPublicKey().toString('base64url'))"], capture_output=True, text=True).stdout
+    return {"endpoint": f"https://127.0.0.1:{PPORT}/{path}", "keys": {"p256dh": pub, "auth": base64.urlsafe_b64encode(os.urandom(16)).decode().rstrip("=")}}
+srv = subprocess.Popen(["node", "dev.mjs"], cwd=ROOT, env={**os.environ, "PORT": str(PORT), "REDIS_URL": f"redis://127.0.0.1:{RPORT}", "RESET_CODE": "kurtarma-123", "NODE_TLS_REJECT_UNAUTHORIZED": "0"}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 time.sleep(1.2)
 log = []
 def ok(name, cond, extra=""): log.append(("PASS" if cond else "FAIL") + "  " + name + ("  " + str(extra) if extra else ""))
@@ -58,6 +76,11 @@ async def main():
         ok("wrong owner password refused", "hatalı" in await ow.inner_text("#root"))
         await ow.fill("#lShop", slug); await ow.fill("#lUser", user0); await ow.fill("#lPass", pass0); await ow.click("button[type=submit]"); await ow.wait_for_timeout(700)
         nav = await ow.inner_text("nav.tabs")
+        sub_ok = await ow.evaluate("(s) => fetch('/api/staff?action=pushOn', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sub: s})}).then(r => r.status)", fake_sub("owner-dev"))
+        await ow.evaluate("(s) => fetch('/api/staff?action=pushOn', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sub: s})})", fake_sub("gone-dev"))
+        ok("agenda offers 'Bildirimleri aç'", "Bildirimleri aç" in await ow.inner_text("main"))
+        await ow.screenshot(path=OUT + "02a_push_banner.png")
+        ok("phone registered for notifications", sub_ok == 200, sub_ok)
         ok("owner menus", all(x in nav for x in ["Ajanda", "Müşteriler", "Ustalar", "Ayarlar"]), nav.replace("\n", " "))
         await ow.click("nav [data-v=ayar]"); await ow.wait_for_timeout(300)
         await ow.fill("#cShop", "Kemal'in Yeri"); await ow.fill("#cAddr", "Ümraniye, İstanbul"); await ow.fill("#cPhone", "0216 555 44 33")
@@ -90,6 +113,9 @@ async def main():
         await cu.fill("#fn", "Ahmet Yılmaz"); await cu.fill("#fp", "0532 111 22 33"); await cu.fill("#fo", "Yanlar 2 numara")
         await cu.click("[data-act=confirm]"); await cu.wait_for_timeout(600)
         dtxt = await cu.inner_text("#app")
+        await cu.wait_for_timeout(300)
+        ok("new request → notification pushed to owner's phone (encrypted, VAPID)", any(x["path"] == "/owner-dev" and x["enc"] == "aes128gcm" and x["auth"].startswith("vapid") for x in pushed), pushed)
+        ok("expired phone removed after 410", "gone-dev" not in subprocess.run(["redis-cli", "-p", str(RPORT), "--scan", "--pattern", "s:*:push"], capture_output=True, text=True).stdout and "gone-dev" not in "".join(subprocess.run(["redis-cli", "-p", str(RPORT), "hvals", k], capture_output=True, text=True).stdout for k in subprocess.run(["redis-cli", "-p", str(RPORT), "--scan", "--pattern", "s:*:push"], capture_output=True, text=True).stdout.split()))
         ok("request sent, waiting for approval, countdown shown", "Onay bekliyor" in dtxt and "sonra" in dtxt, [l for l in dtxt.split("\n") if "sonra" in l][:1])
         await cu.screenshot(path=OUT + "04_requested.png", full_page=True)
         mine = await cu.evaluate(f"JSON.parse(localStorage.getItem('mine:{slug}'))")
