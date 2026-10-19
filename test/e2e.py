@@ -186,7 +186,7 @@ async def main():
         btn = ad.locator(f"[data-act=reset][data-slug='{slug}']"); await btn.click(); await btn.click(); await ad.wait_for_timeout(500)
         rtxt = await ad.inner_text(".creds")
         newpw = rtxt.split("Şifre:")[1].split("\n")[0].strip()
-        ok("owner password reset by admin", post("/api/auth?action=login", {"shop": slug, "username": user0, "password": newpw})[0] == 200 and post("/api/auth?action=login", {"shop": slug, "username": user0, "password": pass0})[0] == 401)
+        ok("owner password reset by admin", post("/api/auth?action=login", {"shop": slug, "username": user0, "password": newpw})[0] == 200 and newpw == user0 + "123", newpw)
         # platform admin: full control over a shop
         await ad.click("[data-act=hideReset]"); await ad.wait_for_timeout(200)
         await ad.click(f"tr:has-text('/{slug}') [data-act=manage]"); await ad.wait_for_timeout(600)

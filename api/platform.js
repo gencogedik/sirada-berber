@@ -134,7 +134,7 @@ export default handle(async (req, res) => {
     const users = await hallJSON(K(s.id, "users"));
     const owner = Object.values(users).find(x => x.role === "sahip");
     if (!owner) return fail(res, 404, "Bu dükkânın sahip hesabı yok.");
-    const password = genPass();
+    const password = owner.username + "123";
     Object.assign(owner, hashPass(password), { ver: (owner.ver || 1) + 1, disabled: false });
     await hsetJSON(K(s.id, "users"), owner.username, owner);
     return send(res, 200, { username: owner.username, password });
@@ -166,8 +166,8 @@ export default handle(async (req, res) => {
   }
   if (a === "userPass") {
     const u = await getUser(); if (!u) return;
-    const password = b.password ? String(b.password) : genPass();
-    if (password.length < 8) return fail(res, 400, "Şifre en az 8 karakter olmalı.");
+    const password = b.password ? String(b.password) : u.username + "123";
+    if (b.password && password.length < 6) return fail(res, 400, "Şifre en az 6 karakter olmalı.");
     Object.assign(u, hashPass(password), { ver: (u.ver || 1) + 1 });
     await hsetJSON(UK, u.username, u);
     return send(res, 200, { username: u.username, password });
