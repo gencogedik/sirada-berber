@@ -56,17 +56,24 @@ function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on
 async function call(action, data) {
   const r = await fetch("/api/platform?action=" + action, data ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {});
   let j = {}; try { j = await r.json(); } catch {}
-  if (r.status === 401 && !["login", "setup"].includes(action)) { admin = null; renderAuth("Oturum kapandı. Tekrar giriş yap."); }
+  if (r.status === 401 && !["login", "setup", "recover"].includes(action)) { admin = null; renderAuth("Oturum kapandı. Tekrar giriş yap."); }
   if (!r.ok) throw new Error(j.error || "Bağlantı hatası.");
   return j;
 }
 const MARK = '<svg width="24" height="24" viewBox="0 0 26 26"><g fill="none" stroke="#f6d24a" stroke-width="2.4" stroke-linecap="round"><circle cx="6" cy="7" r="3.3"/><circle cx="6" cy="19" r="3.3"/><path d="M9 8.6 23 17M9 17.4 23 9"/></g></svg>';
 const day = (ts) => ts ? new Date(ts).toLocaleDateString("tr-TR", { day: "numeric", month: "short" }) : "—";
 let admin = null, needsSetup = false, shops = null, made = null, reset = null, editSlug = null, detail = null, D = null, delAsk = false;
+let recover = false;
 let picked = new Set(), bulkAsk = false, rowAsk = null, admins = null, adminDel = null;
 
 function renderAuth(err) {
-  $("root").innerHTML = needsSetup
+  $("root").innerHTML = recover && !needsSetup
+    ? `<form class="auth" id="rf" novalidate><div class="mark">${MARK}</div><div><h1>Şifremi <span class="band">unuttum</span></h1><p class="soft" style="margin:8px 0 0">Vercel'de tanımladığın <b>RESET_CODE</b> ile şifreni yenile. Olmayan bir kullanıcı adı yazarsan o adla yeni yönetici hesabı açılır.</p></div>
+      <label class="fld" for="rc"><span>Kurtarma kodu (RESET_CODE)</span><input id="rc" type="password" autocomplete="off"></label>
+      <label class="fld" for="u"><span>Kullanıcı adı</span><input id="u" autocapitalize="none" autocomplete="username"></label>
+      <label class="fld" for="p"><span>Yeni şifre <span class="soft">(en az 10 karakter)</span></span><input id="p" type="text" autocomplete="new-password"></label>
+      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Şifreyi yenile ve gir</button><button class="link small soft" type="button" id="toLogin">Girişe dön</button></form>`
+    : needsSetup
     ? `<form class="auth" id="sf" novalidate><div class="mark">${MARK}</div><div><h1>Yönetici <span class="band">hesabı</span></h1><p class="soft" style="margin:8px 0 0">Sırada'yı berberlere satan kişinin hesabı. Dükkân hesaplarını buradan oluşturur, şifrelerini yenilersin. Bir kez kurulur.</p></div>
       <label class="fld" for="u"><span>Kullanıcı adı</span><input id="u" autocapitalize="none" autocomplete="username"></label>
       <label class="fld" for="p"><span>Şifre <span class="soft">(en az 10 karakter)</span></span><input id="p" type="password" autocomplete="new-password"></label>
@@ -74,7 +81,12 @@ function renderAuth(err) {
     : `<form class="auth" id="lf" novalidate><div class="mark">${MARK}</div><div><h1>Sırada <span class="band">yönetim</span></h1></div>
       <label class="fld" for="u"><span>Kullanıcı adı</span><input id="u" autocapitalize="none" autocomplete="username"></label>
       <label class="fld" for="p"><span>Şifre</span><input id="p" type="password" autocomplete="current-password"></label>
-      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Giriş yap</button></form>`;
+      ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Giriş yap</button><button class="link small soft" type="button" id="toRecover">Şifremi unuttum</button></form>`;
+  if ($("toRecover")) $("toRecover").onclick = () => { recover = true; renderAuth(); };
+  if ($("toLogin")) $("toLogin").onclick = () => { recover = false; renderAuth(); };
+  if ($("rf")) { $("rf").onsubmit = async (e) => { e.preventDefault();
+    try { const r = await call("recover", { code: $("rc").value, username: $("u").value, password: $("p").value }); admin = r.admin; recover = false;
+      toast(r.created ? "Yeni yönetici hesabı açıldı" : "Şifren yenilendi"); load(); } catch (x) { renderAuth(x.message); } }; return; }
   const f = $("sf") || $("lf");
   f.onsubmit = async (e) => { e.preventDefault();
     try { const r = await call(needsSetup ? "setup" : "login", { username: $("u").value, password: $("p").value }); admin = r.admin; needsSetup = false;

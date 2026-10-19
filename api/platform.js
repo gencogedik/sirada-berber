@@ -1,4 +1,5 @@
 // Platform admin (the person who sells Sırada to barbershops): create shop accounts, reset owner passwords, open/close shops.
+import crypto from "node:crypto";
 import { send, fail, body, query, ip, rateLimit, handle, redis, hallJSON, hgetJSON, hsetJSON, getCfg, saveCfg, hashPass, checkPass,
   adminCookie, clearAdminCookie, currentAdmin, normUser, rid, genPass, K, DEFAULT_CFG, setSlug, validSlug, migrateLegacy, hasDb, OPEN,
   clip, sessionCookie, userView, purgeShop } from "./_lib.js";
@@ -26,6 +27,20 @@ export default handle(async (req, res) => {
     if (!ad || !checkPass(b.password || "", ad)) return fail(res, 401, "Kullanıcı adı ya da şifre hatalı.");
     await migrateLegacy();
     return send(res, 200, { admin: { username: ad.username } }, { "Set-Cookie": adminCookie(ad) });
+  }
+  if (req.method === "POST" && a === "recover") {   // forgot password: needs RESET_CODE set in Vercel env
+    if (!(await rateLimit("precover:" + ip(req), 5, 3600))) return fail(res, 429, "Çok fazla deneme. 1 saat sonra tekrar dene.");
+    const code = String(process.env.RESET_CODE || "");
+    if (code.length < 8) return fail(res, 403, "Kurtarma kapalı. Vercel'de en az 8 karakterli RESET_CODE ortam değişkeni ekleyip yeniden dağıt.");
+    const b = body(req), given = crypto.createHash("sha256").update(String(b.code || "")).digest(), want = crypto.createHash("sha256").update(code).digest();
+    if (!crypto.timingSafeEqual(given, want)) return fail(res, 401, "Kurtarma kodu hatalı.");
+    const username = normUser(b.username);
+    if (username.length < 3) return fail(res, 400, "Kullanıcı adı en az 3 harf olmalı (a-z, 0-9).");
+    if (String(b.password || "").length < 10) return fail(res, 400, "Yeni şifre en az 10 karakter olmalı.");
+    const old = admins[username];
+    const ad = old ? { ...old, ...hashPass(b.password), ver: (old.ver || 1) + 1 } : { username, ver: 1, createdAt: Date.now(), by: "kurtarma", ...hashPass(b.password) };
+    await hsetJSON("padmins", username, ad);
+    return send(res, 200, { admin: { username }, created: !old }, { "Set-Cookie": adminCookie(ad) });
   }
   if (req.method === "POST" && a === "logout") return send(res, 200, { ok: true }, { "Set-Cookie": clearAdminCookie() });
 

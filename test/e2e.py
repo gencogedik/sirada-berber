@@ -10,7 +10,7 @@ subprocess.run(["redis-cli", "-p", str(RPORT), "flushall"], stdout=subprocess.DE
 # legacy single-shop data, to check it is moved into the new structure
 legacy_cfg = {"shopName": "Genco Berber", "barbers": [{"id": "bx1", "name": "Genco"}], "closed": [1], "open": "09:00", "close": "20:00", "services": [{"id": "s1", "name": "Saç kesimi", "dur": 30, "price": 400}]}
 subprocess.run(["redis-cli", "-p", str(RPORT), "set", "cfg", json.dumps(legacy_cfg)], stdout=subprocess.DEVNULL)
-srv = subprocess.Popen(["node", "dev.mjs"], cwd=ROOT, env={**os.environ, "PORT": str(PORT), "REDIS_URL": f"redis://127.0.0.1:{RPORT}"}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+srv = subprocess.Popen(["node", "dev.mjs"], cwd=ROOT, env={**os.environ, "PORT": str(PORT), "REDIS_URL": f"redis://127.0.0.1:{RPORT}", "RESET_CODE": "kurtarma-123"}, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 time.sleep(1.2)
 log = []
 def ok(name, cond, extra=""): log.append(("PASS" if cond else "FAIL") + "  " + name + ("  " + str(extra) if extra else ""))
@@ -221,6 +221,16 @@ async def main():
         await ad.click("[data-act=bulkAsk]"); await ad.click("[data-act=bulkYes]"); await ad.wait_for_timeout(1200)
         ok("bulk delete removes selected shops", await ad.locator("tbody tr").count() == before - 3 and post(f"/api/public?shop={s4}&action=book", {})[0] == 404 and post(f"/api/public?shop={s5}&action=book", {})[0] == 404)
         await ad.screenshot(path=OUT + "10_list_delete.png", full_page=False)
+        # forgot password via RESET_CODE (UI), then API checks
+        rc2, rp2 = await ctx(); await rp2.goto(BASE + "/yonetim"); await rp2.wait_for_timeout(500)
+        await rp2.click("#toRecover"); await rp2.fill("#rc", "kurtarma-123"); await rp2.fill("#u", "genco"); await rp2.fill("#p", "yepyeni-sifre-1"); await rp2.click("#rf button[type=submit]"); await rp2.wait_for_timeout(800)
+        ok("recover resets admin password and logs in", "Çıkış" in await rp2.inner_text("#root") and post("/api/platform?action=login", {"username": "genco", "password": "yepyeni-sifre-1"})[0] == 200 and post("/api/platform?action=login", {"username": "genco", "password": "yonetici-2026!"})[0] == 401)
+        ok("recover refuses wrong code", post("/api/platform?action=recover", {"code": "yanlis-kod", "username": "x1x", "password": "aaaaaaaaaaaa"})[0] == 401)
+        st, rr = post("/api/platform?action=recover", {"code": "kurtarma-123", "username": "deneme", "password": "deneme-sifre-1"})
+        ok("recover with new username creates admin", st == 200 and rr.get("created") is True)
+        await ad.goto(BASE + "/yonetim"); await ad.wait_for_timeout(500)
+        ok("old admin session ended after password reset", await ad.locator("#lf").count() == 1)
+        await ad.fill("#u", "genco"); await ad.fill("#p", "yepyeni-sifre-1"); await ad.click("#lf button[type=submit]"); await ad.wait_for_timeout(700)
         # wipe everything
         await ad.goto(BASE + "/yonetim"); await ad.wait_for_timeout(700)
         await ad.fill("#wipeC", "yanlış"); await ad.click("#wipeF button[type=submit]"); await ad.wait_for_timeout(400)
