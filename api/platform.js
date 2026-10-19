@@ -2,7 +2,7 @@
 import crypto from "node:crypto";
 import { send, fail, body, query, ip, rateLimit, handle, redis, hallJSON, hgetJSON, hsetJSON, getCfg, saveCfg, hashPass, checkPass,
   adminCookie, clearAdminCookie, currentAdmin, normUser, rid, genPass, K, DEFAULT_CFG, setSlug, validSlug, migrateLegacy, hasDb, OPEN,
-  clip, sessionCookie, userView, purgeShop } from "./_lib.js";
+  clip, sessionCookie, userView, purgeShop, getCard } from "./_lib.js";
 
 export default handle(async (req, res) => {
   const a = query(req).action;
@@ -164,6 +164,11 @@ export default handle(async (req, res) => {
     u.name = name; await hsetJSON(UK, u.username, u);
     if (u.barberId) { const c = await getCfg(s.id); c.barbers = c.barbers.map(x => x.id === u.barberId ? { ...x, name } : x); await saveCfg(s.id, c); }
     return send(res, 200, { ok: true });
+  }
+  if (a === "userCard") {
+    const u = await getUser(); if (!u) return;
+    const cd = await getCard(s.id, u.username, !!b.renew); const c = await getCfg(s.id);
+    return send(res, 200, { ...cd, shopName: c.shopName, slug: s.slug });
   }
   if (a === "userPass") {
     const u = await getUser(); if (!u) return;

@@ -346,3 +346,21 @@ export async function notifyUsers(shop, to, payload) {
     return sent;
   } catch (e) { console.error("push", e); return 0; }
 }
+
+/* ================= login cards (QR) ================= */
+// A card holds a long random key; scanning it signs that usta in. Making a new card cancels the old one.
+export async function getCard(shop, username, renew) {
+  const rec = await hgetJSON(K(shop, "users"), username); if (!rec) return null;
+  if (!rec.card || renew) { rec.card = { t: rid(18), at: Date.now() }; await hsetJSON(K(shop, "users"), rec.username, rec); }
+  return { token: `${shop}~${rec.username}~${rec.card.t}`, at: rec.card.at, username: rec.username, name: rec.name, role: rec.role };
+}
+export async function userByCard(token) {
+  const [shop, un, t] = String(token || "").split("~");
+  if (!shop || !un || !t) return null;
+  const s = await shopById(shop); if (!s) return null;
+  const rec = await hgetJSON(K(shop, "users"), un);
+  if (!rec || !rec.card || !rec.card.t) return null;
+  const a = Buffer.from(sha(t)), b = Buffer.from(sha(rec.card.t));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  return { shop: s, rec };
+}

@@ -72,9 +72,10 @@ async def main():
         # 2. owner logs in, sets up the shop
         oc, ow = await ctx()
         await ow.goto(BASE + "/usta"); await ow.wait_for_timeout(300)
-        await ow.fill("#lShop", slug); await ow.fill("#lUser", user0); await ow.fill("#lPass", "yanlis"); await ow.click("button[type=submit]"); await ow.wait_for_timeout(300)
+        ok("login screen offers QR login", "QR ile giriş" in await ow.inner_text("#root")); await ow.screenshot(path=OUT + "01b_login.png")
+        await ow.fill("#lUser", user0); await ow.fill("#lPass", "yanlis"); await ow.click("button[type=submit]"); await ow.wait_for_timeout(300)
         ok("wrong owner password refused", "hatalı" in await ow.inner_text("#root"))
-        await ow.fill("#lShop", slug); await ow.fill("#lUser", user0); await ow.fill("#lPass", pass0); await ow.click("button[type=submit]"); await ow.wait_for_timeout(700)
+        await ow.fill("#lUser", user0); await ow.fill("#lPass", pass0); await ow.click("button[type=submit]"); await ow.wait_for_timeout(700)
         nav = await ow.inner_text("nav.tabs")
         sub_ok = await ow.evaluate("(s) => fetch('/api/staff?action=pushOn', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sub: s})}).then(r => r.status)", fake_sub("owner-dev"))
         await ow.evaluate("(s) => fetch('/api/staff?action=pushOn', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({sub: s})})", fake_sub("gone-dev"))
@@ -149,6 +150,21 @@ async def main():
         bk = get(f"/api/public?shop={slug}&action=booking&id={mine[0]['id']}&k={mine[0]['k']}")["booking"]
         ok("customer sees approved", bk["status"] == "onayli", bk["status"])
         ok("usta's approval note reaches customer", bk.get("shopMsg") == "5 dk erken gel", bk.get("shopMsg"))
+        # login without shop code, and QR login cards
+        ok("login with username only (no shop code)", post("/api/auth?action=login", {"username": "emre", "password": "emre12345"})[0] == 200)
+        await ow.click("nav [data-v=ustalar]"); await ow.wait_for_timeout(500)
+        await ow.click(".bc:has-text('Emre') [data-act=card]"); await ow.wait_for_timeout(1500)
+        ok("owner opens Emre's login card (QR image)", await ow.locator(".sc-ov img").count() == 1)
+        await ow.screenshot(path=OUT + "05b_card_overlay.png")
+        card_png = await ow.evaluate("document.querySelector('.sc-ov img').src")
+        import base64 as _b; open(OUT + "05c_card.png", "wb").write(_b.b64decode(card_png.split(",")[1]))
+        tok = (await ow.evaluate("fetch('/api/staff?action=card&u=emre').then(r => r.json())"))["token"]
+        ok("card logs in without password", post("/api/auth?action=card", {"k": tok})[0] == 200 and post("/api/auth?action=card", {"k": tok + "x"})[0] == 401)
+        qc, qp = await ctx(); await qp.goto(BASE + "/usta?k=" + tok); await qp.wait_for_timeout(900)
+        ok("scanning the card link opens Emre's panel", "Emre" in await qp.inner_text("header") and "k=" not in qp.url, qp.url)
+        await ow.click(".sc-ov [data-x=renew]"); await ow.click(".sc-ov [data-x=renew]"); await ow.wait_for_timeout(1500)
+        ok("new card cancels the old one", post("/api/auth?action=card", {"k": tok})[0] == 401 and await ow.locator(".sc-ov img").count() == 1)
+        await ow.click(".sc-ov [data-x=close]"); await ow.click("nav [data-v=ajanda]"); await ow.wait_for_timeout(400)
         await em.click("nav [data-v=saatler]"); await em.wait_for_timeout(300)
         ok("usta sees own hours page", "Randevu dilimi" in await em.inner_text("main"))
         # 5. owner: reject flow on a second customer, phone booking, block

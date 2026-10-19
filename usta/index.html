@@ -17,7 +17,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Instrument+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="/assets/base.css?v=4">
+<script src="/assets/card.js?v=1" defer></script>
 <style>
+.or { display: flex; align-items: center; gap: 10px; color: var(--soft); font-size: .85rem }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--hair) }
 body { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)) }
 .wrap { max-width: 880px }
 .auth { max-width: 400px; margin: 8vh auto 0; display: grid; gap: 18px }
@@ -123,7 +126,7 @@ function toast(m) { const t = $("toast"); t.textContent = m; t.classList.add("on
 async function call(path, data) {
   const r = await fetch(path, data ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) } : {});
   let j = {}; try { j = await r.json(); } catch {}
-  if (r.status === 401 && !path.includes("action=login")) { me = null; A = null; renderAuth("Oturum kapandı. Tekrar giriş yap."); }
+  if (r.status === 401 && !/action=(login|card)/.test(path)) { me = null; A = null; renderAuth("Oturum kapandı. Tekrar giriş yap."); }
   if (!r.ok) throw new Error(j.error || "Bağlantı hatası. Tekrar dene.");
   return j;
 }
@@ -143,7 +146,11 @@ const lsGet = (k) => { try { return localStorage.getItem(k) || ""; } catch { ret
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 /* ---------- login ---------- */
-function renderAuth(err, forgot) {
+async function cardLogin(k) {
+  try { const j = await call("/api/auth?action=card", { k }); me = j.user; shopSlug = j.shop.slug; lsSet("sirada_shop", shopSlug); toast("Hoş geldin, " + me.name); boot2(); }
+  catch (x) { renderAuth(x.message); }
+}
+function renderAuth(err, forgot, needShop) {
   $("sheet").innerHTML = "";
   const pre = new URLSearchParams(location.search).get("d") || lsGet("sirada_shop");
   if (forgot) {
@@ -154,16 +161,23 @@ function renderAuth(err, forgot) {
     return;
   }
   $("root").innerHTML = `<form class="auth" id="loginF" novalidate><div class="mark">${SCISSORS}</div>
-    <div><h1>Usta <span class="band">girişi</span></h1><p class="soft" style="margin:8px 0 0">Dükkân kodu, müşteri bağlantının sonundaki addır. Örn. <span class="mono">berber-01</span></p></div>
-    <label class="fld" for="lShop"><span>Dükkân kodu</span><input id="lShop" autocapitalize="none" value="${esc(pre)}" placeholder="berber-01"></label>
+    <div><h1>Usta <span class="band">girişi</span></h1><p class="soft" style="margin:8px 0 0">Giriş kartın varsa QR'ı okut, yoksa kullanıcı adı ve şifrenle gir.</p></div>
+    <button type="button" class="btn full y" data-act="qrLogin" style="gap:10px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><path d="M8 12h8"/></svg>QR ile giriş</button>
+    <div class="or"><span>ya da</span></div>
     <label class="fld" for="lUser"><span>Kullanıcı adı</span><input id="lUser" autocomplete="username" autocapitalize="none"></label>
     <label class="fld" for="lPass"><span>Şifre</span><input id="lPass" type="password" autocomplete="current-password"></label>
+    ${needShop || pre ? `<label class="fld" for="lShop"><span>Dükkân kodu ${needShop ? "" : '<span class="soft">(isteğe bağlı)</span>'}</span><input id="lShop" autocapitalize="none" value="${esc(pre)}" placeholder="berber-01"></label>`
+      : `<button type="button" class="link small soft" data-act="showShop" style="justify-self:start">Dükkân kodu ekle</button>`}
     ${err ? `<div class="err">${esc(err)}</div>` : ""}<button class="btn full" type="submit">Giriş yap</button>
     <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap"><button type="button" class="link small" data-act="forgot">Şifremi unuttum</button><a class="link small soft" href="${pre ? "/" + esc(pre) : "/"}">Müşteri sayfası</a></div></form>`;
   $("loginF").onsubmit = async (e) => { e.preventDefault();
-    try { const j = await call("/api/auth?action=login", { shop: $("lShop").value, username: $("lUser").value, password: $("lPass").value }); me = j.user; shopSlug = j.shop.slug; lsSet("sirada_shop", shopSlug); boot2(); }
-    catch (x) { renderAuth(x.message); } };
-  setTimeout(() => { const f = pre ? $("lUser") : $("lShop"); f && f.focus(); }, 30);
+    const sh = $("lShop") ? $("lShop").value : "", un = $("lUser").value, pw = $("lPass").value;
+    try { const r = await fetch("/api/auth?action=login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ shop: sh, username: un, password: pw }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { const ns = !!j.needShop; renderAuth(j.error || "Bağlantı hatası. Tekrar dene.", false, ns || !!sh); if ($("lUser")) $("lUser").value = un; if ($("lPass")) $("lPass").value = pw; if (ns && $("lShop")) $("lShop").focus(); return; }
+      me = j.user; shopSlug = j.shop.slug; lsSet("sirada_shop", shopSlug); boot2(); }
+    catch (x) { renderAuth("Bağlantı hatası. Tekrar dene."); } };
+  setTimeout(() => { const f = needShop ? $("lShop") : $("lUser"); f && !err && f.focus(); }, 30);
 }
 
 /* ---------- shell ---------- */
@@ -392,11 +406,11 @@ function bCard(b, i) {
   return `<div class="bc ${b.active ? "" : "off"}"><div class="hd"><span class="av" style="background:${COLORS[i % COLORS.length]}">${esc(ini(b.name))}</span>
       <b>${esc(b.name)}${b.id === me.barberId ? ' <span class="tag mut">Sen</span>' : ""}${b.active ? "" : ' <span class="tag iptal">Gizli</span>'}</b>
       <button class="btn light sm" data-act="editB" data-v="${b.id}" style="grid-row:span 2">${open ? "Kapat" : "Düzenle"}</button>
-      <span class="soft small">${b.title ? esc(b.title) + " · " : ""}${b.step} dk dilim · ${esc(b.open)}–${esc(b.close)}${b.closed.length ? " · " + b.closed.map(d => DAYS[d]).join(", ") + " izinli" : ""} · ${l ? "giriş: <span class='mono'>" + esc(l.username) + "</span>" + (l.disabled ? " (kapalı)" : "") : "giriş hesabı yok"}</span></div>
+      <span class="soft small">${b.title ? esc(b.title) + " · " : ""}${b.step} dk dilim · ${esc(b.open)}–${esc(b.close)}${b.closed.length ? " · " + b.closed.map(d => DAYS[d]).join(", ") + " izinli" : ""} · ${l ? "giriş: <span class='mono'>" + esc(l.username) + "</span>" + (l.disabled ? " (kapalı)" : "") : "giriş hesabı yok"}</span>${l && !l.disabled ? `<button class="link small" data-act="card" data-u="${esc(l.username)}" style="justify-self:start">Giriş kartı</button>` : ""}</div>
     ${open ? `<form class="line" data-rename="${b.id}" novalidate><label class="fld" for="bn-${b.id}"><span>Ad</span><input id="bn-${b.id}" maxlength="40" value="${esc(b.name)}"></label><button class="btn light sm" type="submit">Adı kaydet</button></form>
       ${vHours(b.id, false, team.barbers)}
       <div class="sec" style="padding-top:6px"><h2 style="font-size:1.2rem">Giriş hesabı</h2>
-        ${l ? `<div class="line"><label class="fld" for="pw-${b.id}"><span>Yeni şifre <span class="soft">(${esc(l.username)})</span></span><input id="pw-${b.id}" type="text" autocomplete="off" placeholder="En az 8 karakter"></label><button class="btn light sm" data-act="resetPw" data-v="${b.id}">Şifreyi değiştir</button>
+        ${l ? `<div class="line"><label class="fld" for="pw-${b.id}"><span>Yeni şifre <span class="soft">(${esc(l.username)})</span></span><input id="pw-${b.id}" type="text" autocomplete="off" placeholder="En az 8 karakter"></label><button class="btn light sm" data-act="resetPw" data-v="${b.id}">Şifreyi değiştir</button><button class="btn sm" data-act="card" data-u="${esc(l.username)}">Giriş kartı</button>
             ${l.role !== "sahip" ? `<button class="btn light sm" data-act="toggleLogin" data-v="${b.id}" data-d="${l.disabled ? 0 : 1}">${l.disabled ? "Girişi aç" : "Girişi kapat"}</button>` : ""}</div>`
           : `<div class="line"><label class="fld" for="lu-${b.id}"><span>Kullanıcı adı</span><input id="lu-${b.id}" autocapitalize="none" placeholder="usta"></label><label class="fld" for="lp-${b.id}"><span>Şifre</span><input id="lp-${b.id}" type="text" value="${genPw()}"></label><button class="btn light sm" data-act="giveLogin" data-v="${b.id}">Giriş hesabı ver</button></div>`}
       </div>
@@ -509,12 +523,23 @@ function pushCard(inAgenda) {
 }
 if ("serviceWorker" in navigator) navigator.serviceWorker.addEventListener("message", (e) => { if (e.data && e.data.type === "push" && me && page === "ajanda" && !sheet && !typing()) loadAgenda(true); });
 
+/* ---------- login card ---------- */
+async function openCard(username, renew) {
+  try {
+    const d = renew ? await call("/api/staff?action=card", { u: username }) : await call("/api/staff?action=card&u=" + encodeURIComponent(username));
+    if (!window.SiradaCard) return toast("Sayfa yükleniyor, tekrar dene.");
+    SiradaCard.show({ ...d, url: location.origin + "/usta?k=" + encodeURIComponent(d.token) }, { onRenew: me.imp ? null : () => openCard(username, true) });
+    if (renew) toast("Yeni kart hazır, eski kart artık çalışmaz");
+  } catch (x) { toast(x.message); }
+}
+
 /* ---------- account ---------- */
 function vAccount() {
   const link = location.origin + "/" + shopSlug;
   return `<div class="ph"><div><span class="lbl">${owner() ? "Dükkân sahibi" : "Usta"} · ${esc(shopSlug)}</span><h1>Hesabım</h1></div></div>
     <div class="rows" style="max-width:520px"><div><span>Kullanıcı adı</span><span class="mono">${esc(me.username)}</span></div><div><span>Dükkân kodu</span><span class="mono">${esc(shopSlug)}</span></div></div>
     <div class="linkbox" style="margin-top:12px;max-width:520px"><span class="mono">${esc(link)}</span><button class="btn light sm" data-act="copy" data-v="${esc(link)}">Bağlantıyı kopyala</button></div>
+    <div class="note" style="max-width:520px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span><b>Giriş kartım</b><br><span class="soft small">QR'lı kart: başka telefondan şifresiz girmek için okut.</span></span><button class="btn sm" data-act="card" data-u="${esc(me.username)}">Kartı göster</button></div>
     <div style="max-width:520px">${me.imp ? "" : pushCard(false)}</div>
     <form class="sec" id="nmF" novalidate style="max-width:520px"><h2>Adım</h2><div class="line"><label class="fld" for="nName"><span>Görünen ad</span><input id="nName" maxlength="40" value="${esc(me.name)}"></label><button class="btn light" type="submit">Kaydet</button></div></form>
     <form class="sec" id="pwF" novalidate style="max-width:520px"><h2>Şifre değiştir</h2>
@@ -540,6 +565,9 @@ document.addEventListener("click", async (e) => {
     case "open": openId = openId === v ? null : v; cancelAsk = null; render(true); break;
     case "approve": { const m = (($("rm-" + id) || {}).value || reqMsg[id] || "").trim(); delete reqMsg[id]; await act("/api/staff?action=approve", { id, msg: m }, m ? "Onaylandı, notun müşteriye gitti" : "Onaylandı"); break; }
     case "rejAsk": { const i = $("rm-" + id); if (i) reqMsg[id] = i.value; rejectAsk = id; render(true); setTimeout(() => $("rm-" + id) && $("rm-" + id).focus(), 20); break; }
+    case "qrLogin": if (window.SiradaCard) SiradaCard.scan((k) => cardLogin(k)); else toast("Sayfa yükleniyor, tekrar dene."); break;
+    case "showShop": { const u = $("lUser").value, p = $("lPass").value; renderAuth(null, false, true); $("lUser").value = u; $("lPass").value = p; $("lShop").focus(); break; }
+    case "card": await openCard(el.dataset.u || me.username); break;
     case "pushOn": await pushEnable(); break;
     case "pushOff": await pushDisable(); break;
     case "pushTest": try { await call("/api/staff?action=pushTest", {}); toast("Deneme bildirimi gönderildi"); } catch (x) { toast(x.message); } break;
@@ -605,8 +633,9 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && sheet &&
 async function boot2() { page = "ajanda"; date = null; A = null; range = null; render(true); pushSync(); await loadAgenda(true); }
 (async () => {
   try { const r = await call("/api/auth?action=me"); me = r.user; if (r.shop) { shopSlug = r.shop.slug; lsSet("sirada_shop", shopSlug); } } catch { $("root").innerHTML = `<div class="auth"><div class="empty"><b>Bağlanılamadı.</b> Sayfayı yenile.</div></div>`; return; }
-  if (!me) return renderAuth();
-  boot2();
+  const qk = new URLSearchParams(location.search).get("k");
+  if (qk) { history.replaceState(null, "", "/usta"); await cardLogin(qk); }
+  else if (!me) renderAuth(); else boot2();
   setInterval(() => { if (me && document.visibilityState === "visible" && page === "ajanda" && !sheet && !typing() && !openId && !rejectAsk) loadAgenda(true); }, 20000);
 })();
 </script>
